@@ -1,5 +1,7 @@
 # Local LLM Bench
 
+**Open the app: https://apbeers.github.io/browser-local-model-chatbot/**
+
 A browser chatbot for measuring how well small language models run **on-device** in different browsers, phones, tablets and computers. Models run on the GPU via WebGPU. Nothing is sent to a server.
 
 - **Engine:** [WebLLM](https://github.com/mlc-ai/web-llm) 0.2.88 (Apache-2.0), vendored at `vendor/web-llm/`. It's the only third-party code; the UI, Markdown renderer, storage, stats and charts are all hand-written.
