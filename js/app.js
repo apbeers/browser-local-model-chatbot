@@ -517,6 +517,9 @@ async function send() {
   if (!chat.messages.length) chat.title = titleFrom(text);
   chat.modelId = llm.modelId;
   chat.messages.push({ role: "user", content: text, at: Date.now() });
+  if (els.messages.querySelector(".empty-state")) els.messages.innerHTML = "";
+  els.messages.append(messageEl(chat.messages[chat.messages.length - 1], chat.messages.length - 1));
+  els.messages.scrollTop = els.messages.scrollHeight;
   await saveChat(chat);
   if (location.hash !== `#/chat/${chat.id}`) history.replaceState(null, "", `#/chat/${chat.id}`);
   els.title.textContent = chat.title;

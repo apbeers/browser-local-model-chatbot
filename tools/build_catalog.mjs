@@ -17,7 +17,9 @@ const pkg = fs.readFileSync(path.join(repo, "vendor/web-llm/VERSION"), "utf8").t
 const HOSTS = {
   main: { base: "./", repo: "apbeers/browser-local-model-chatbot", dir: path.join(repo, "models") },
   large: {
-    base: "https://apbeers.github.io/browser-models-large/models/",
+    // Root-relative: both project sites share a host (apbeers.github.io or a custom
+    // domain). An absolute github.io URL redirects cross-origin and breaks fetch().
+    base: "/browser-models-large/models/",
     repo: "apbeers/browser-models-large",
     dir: path.join(largeRepo, "models"),
   },
@@ -25,9 +27,10 @@ const HOSTS = {
 
 // Human-facing info that is not in the model files.
 const INFO = {
-  "SmolLM2-360M-Instruct-q4f16_1-MLC": { label: "SmolLM2 360M", family: "SmolLM2", params: 0.36, license: "Apache-2.0" },
+  "SmolLM2-360M-Instruct-q4f16_1-MLC": { label: "SmolLM2 360M", sampling: { temperature: 0.2, top_p: 0.9 }, family: "SmolLM2", params: 0.36, license: "Apache-2.0" },
   "SmolLM2-360M-Instruct-q4f32_1-MLC": {
     label: "SmolLM2 360M (f32, no shader-f16)",
+    sampling: { temperature: 0.2, top_p: 0.9 },
     family: "SmolLM2",
     params: 0.36,
     license: "Apache-2.0",

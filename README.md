@@ -61,4 +61,4 @@ After changing any app file, run `node tools/build_sw.mjs` to bump the service-w
 
 ## Deploying
 
-Enable GitHub Pages for this repo (Settings → Pages → Deploy from a branch → root) and do the same for `browser-models-large`. The app expects the large repo at `https://apbeers.github.io/browser-models-large/`.
+Enable GitHub Pages for this repo (Settings → Pages → Deploy from a branch → root) and do the same for `browser-models-large`. The app loads the large repo from the same host at `/browser-models-large/`, so it works on `apbeers.github.io` or a custom domain.
