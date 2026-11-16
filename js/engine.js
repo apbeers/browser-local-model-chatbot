@@ -66,6 +66,27 @@ export class LLM extends EventTarget {
     const lib = await webllm();
     const session = await Session.start({ model, webllmVersion: this.catalog.webllm, cachedBefore });
     this.session = session;
+    if (cachedBefore < 0.97) {
+      // Fail fast with a readable message instead of WebLLM's bare "Load failed".
+      let res = null;
+      try {
+        res = await fetch(model.modelUrl + "mlc-chat-config.json", { cache: "no-store" });
+      } catch {
+        /* network or CORS failure */
+      }
+      if (!res || !res.ok) {
+        const u = new URL(model.modelUrl);
+        const err = new Error(
+          `Can't reach the model files at ${u.host}${u.pathname} (${res ? "HTTP " + res.status : "network error"}). ` +
+            "Check your connection and that the site hosting this model is published.",
+        );
+        await session.loadFailed(err);
+        this.session = null;
+        this.setState("error");
+        this.emit("error", err);
+        throw err;
+      }
+    }
     const appConfig = buildAppConfig(this.catalog, lib.prebuiltAppConfig);
     const onProgress = (report) => {
       session.onProgress(report);
@@ -181,6 +202,7 @@ export class LLM extends EventTarget {
       stream_options: { include_usage: true },
     };
     if (maxTokens) req.max_tokens = maxTokens;
+    if (this.model.sampling) Object.assign(req, this.model.sampling);
     const stream = await this.engine.chat.completions.create(req);
     let text = "";
     let tFirst = null;

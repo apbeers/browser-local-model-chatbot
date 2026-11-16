@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T16:12:44.273Z",
+  "generatedAt": "2026-11-16T16:39:29.875Z",
   "webllm": "0.2.88",
   "hosts": {
     "main": {
@@ -7,7 +7,7 @@
       "repo": "apbeers/browser-local-model-chatbot"
     },
     "large": {
-      "base": "https://apbeers.github.io/browser-models-large/models/",
+      "base": "/browser-models-large/models/",
       "repo": "apbeers/browser-models-large"
     }
   },
@@ -16,6 +16,10 @@
       "id": "SmolLM2-360M-Instruct-q4f32_1-MLC",
       "host": "main",
       "label": "SmolLM2 360M (f32, no shader-f16)",
+      "sampling": {
+        "temperature": 0.2,
+        "top_p": 0.9
+      },
       "family": "SmolLM2",
       "params": 0.36,
       "license": "Apache-2.0",
@@ -35,6 +39,10 @@
       "id": "SmolLM2-360M-Instruct-q4f16_1-MLC",
       "host": "main",
       "label": "SmolLM2 360M",
+      "sampling": {
+        "temperature": 0.2,
+        "top_p": 0.9
+      },
       "family": "SmolLM2",
       "params": 0.36,
       "license": "Apache-2.0",

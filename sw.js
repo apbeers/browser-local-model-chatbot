@@ -2,7 +2,7 @@
 // Model weights are NOT cached here; WebLLM stores them in OPFS itself.
 // VERSION and ASSETS are rewritten by tools/build_sw.mjs.
 
-const VERSION = "b942df8c0371";
+const VERSION = "bb79027a799e";
 const ASSETS = [
   "./",
   "index.html",
