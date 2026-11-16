@@ -1,0 +1,97 @@
+{
+  "generatedAt": "2026-11-16T16:12:44.273Z",
+  "webllm": "0.2.88",
+  "hosts": {
+    "main": {
+      "base": "./",
+      "repo": "apbeers/browser-local-model-chatbot"
+    },
+    "large": {
+      "base": "https://apbeers.github.io/browser-models-large/models/",
+      "repo": "apbeers/browser-models-large"
+    }
+  },
+  "models": [
+    {
+      "id": "SmolLM2-360M-Instruct-q4f32_1-MLC",
+      "host": "main",
+      "label": "SmolLM2 360M (f32, no shader-f16)",
+      "family": "SmolLM2",
+      "params": 0.36,
+      "license": "Apache-2.0",
+      "quant": "q4f32_1",
+      "requiresF16": false,
+      "lib": "SmolLM2-360M-Instruct-q4f32_1_cs1k-webgpu.wasm",
+      "bytes": 212426251,
+      "repoBytes": 207364313,
+      "vramMB": 580,
+      "contextWindow": 4096,
+      "lowResource": true,
+      "source": "https://huggingface.co/mlc-ai/SmolLM2-360M-Instruct-q4f32_1-MLC",
+      "revision": "1e6b2ca3684e2bc8a6d39eb36e8d6cd51eb12bda",
+      "splits": {}
+    },
+    {
+      "id": "SmolLM2-360M-Instruct-q4f16_1-MLC",
+      "host": "main",
+      "label": "SmolLM2 360M",
+      "family": "SmolLM2",
+      "params": 0.36,
+      "license": "Apache-2.0",
+      "quant": "q4f16_1",
+      "requiresF16": true,
+      "lib": "SmolLM2-360M-Instruct-q4f16_1_cs1k-webgpu.wasm",
+      "bytes": 212457339,
+      "repoBytes": 207241441,
+      "vramMB": 376,
+      "contextWindow": 4096,
+      "lowResource": true,
+      "source": "https://huggingface.co/mlc-ai/SmolLM2-360M-Instruct-q4f16_1-MLC",
+      "revision": "3a622fd89e0216e8bb10c410c007c786baa8a033",
+      "splits": {}
+    },
+    {
+      "id": "Qwen2.5-0.5B-Instruct-q4f16_1-MLC",
+      "host": "main",
+      "label": "Qwen2.5 0.5B",
+      "family": "Qwen2.5",
+      "params": 0.49,
+      "license": "Apache-2.0",
+      "quant": "q4f16_1",
+      "requiresF16": true,
+      "lib": "Qwen2-0.5B-Instruct-q4f16_1_cs1k-webgpu.wasm",
+      "bytes": 290875248,
+      "repoBytes": 289692305,
+      "vramMB": 945,
+      "contextWindow": 4096,
+      "lowResource": true,
+      "source": "https://huggingface.co/mlc-ai/Qwen2.5-0.5B-Instruct-q4f16_1-MLC",
+      "revision": "32ff081fe7e4dfe4ffb167b94c66fdf11e02b8ad",
+      "splits": {}
+    },
+    {
+      "id": "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
+      "host": "large",
+      "label": "Qwen2.5 1.5B",
+      "family": "Qwen2.5",
+      "params": 1.54,
+      "license": "Apache-2.0",
+      "quant": "q4f16_1",
+      "requiresF16": true,
+      "lib": "Qwen2-1.5B-Instruct-q4f16_1_cs1k-webgpu.wasm",
+      "bytes": 881931140,
+      "repoBytes": 880287719,
+      "vramMB": 1630,
+      "contextWindow": 4096,
+      "lowResource": true,
+      "source": "https://huggingface.co/mlc-ai/Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
+      "revision": "9bd564b064631febf14deadcac492efb761d60c3",
+      "splits": {
+        "params_shard_0.bin": {
+          "parts": 3,
+          "size": 116686848
+        }
+      }
+    }
+  ]
+}
