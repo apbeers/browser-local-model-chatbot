@@ -1,0 +1,8 @@
+{
+  "id": "Qwen2.5-0.5B-Instruct-q4f16_1-MLC",
+  "source": "https://huggingface.co/mlc-ai/Qwen2.5-0.5B-Instruct-q4f16_1-MLC",
+  "revision": "32ff081fe7e4dfe4ffb167b94c66fdf11e02b8ad",
+  "lib": "Qwen2-0.5B-Instruct-q4f16_1_cs1k-webgpu.wasm",
+  "bytes": 289692305,
+  "splits": {}
+}
