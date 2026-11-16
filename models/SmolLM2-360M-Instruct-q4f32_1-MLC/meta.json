@@ -1,0 +1,8 @@
+{
+  "id": "SmolLM2-360M-Instruct-q4f32_1-MLC",
+  "source": "https://huggingface.co/mlc-ai/SmolLM2-360M-Instruct-q4f32_1-MLC",
+  "revision": "1e6b2ca3684e2bc8a6d39eb36e8d6cd51eb12bda",
+  "lib": "SmolLM2-360M-Instruct-q4f32_1_cs1k-webgpu.wasm",
+  "bytes": 207364313,
+  "splits": {}
+}
