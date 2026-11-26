@@ -53,10 +53,17 @@ export function buildLayout(root) {
     "aria-label": "Send",
     html: '<svg class="i-send" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg><svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>',
   });
+  e.toolsSelect = h(
+    "select",
+    { class: "tools-select", "aria-label": "Tools for this chat", title: "Tools the model may use in this chat" },
+    h("option", { value: "off" }, "Tools off"),
+    h("option", { value: "offline" }, "Offline tools"),
+    h("option", { value: "web" }, "Tools + web"),
+  );
   e.composer = h(
     "form",
     { class: "composer", autocomplete: "off" },
-    h("div", { class: "composer-inner" }, e.prompt, e.sendBtn),
+    h("div", { class: "composer-inner" }, e.toolsSelect, e.prompt, e.sendBtn),
     h("div", { class: "composer-hint" }, "Runs entirely on this device. Nothing leaves your browser."),
   );
 

@@ -10,13 +10,13 @@
    "path": "js/ui/layout.js",
    "summary": "Builds the page skeleton: sidebar, top bar, chat area, page sections.",
    "doc": "components/layout.md",
-   "lines": 83
+   "lines": 90
   },
   {
    "path": "js/ui/chat/message.js",
    "summary": "Draws one chat message (user bubble or assistant reply with stats).",
    "doc": "components/message.md",
-   "lines": 62
+   "lines": 83
   },
   {
    "path": "js/ui/chat/empty-state.js",
@@ -34,7 +34,7 @@
    "path": "js/ui/chat/chat-view.js",
    "summary": "The chat page: opens chats, sends messages, streams replies.",
    "doc": "components/chat-view.md",
-   "lines": 209
+   "lines": 242
   },
   {
    "path": "js/ui/chat/model-picker.js",
@@ -46,7 +46,7 @@
    "path": "js/ui/chat/chat-actions.js",
    "summary": "Menus to rename, move, export and delete chats and projects.",
    "doc": "components/chat-actions.md",
-   "lines": 183
+   "lines": 190
   },
   {
    "path": "js/ui/sidebar.js",
@@ -82,7 +82,7 @@
    "path": "js/ui/views/settings.js",
    "summary": "Settings page.",
    "doc": "components/views.md",
-   "lines": 203
+   "lines": 220
   },
   {
    "path": "js/ui/views/models.js",
@@ -124,7 +124,7 @@
    "path": "css/app.css",
    "summary": "All default styles (large: prefer css/custom.css).",
    "doc": "CSS_CLASSES.md",
-   "lines": 2111
+   "lines": 2155
   }
  ]
 }

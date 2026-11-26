@@ -40,6 +40,12 @@ export function initChatView() {
       $("composer").requestSubmit();
     }
   });
+  $("toolsSelect").addEventListener("change", async () => {
+    const chat = state.chat;
+    chat.toolsMode = $("toolsSelect").value;
+    if (chat.messages.length) await app.chats.updateChat(chat.id, { toolsMode: chat.toolsMode });
+    app.emit("usage", { event: "tools-mode", mode: chat.toolsMode });
+  });
   app.llm.addEventListener("state", () => {
     const gen = app.llm.state === "generating";
     $("sendBtn").classList.toggle("stop", gen);
@@ -64,10 +70,22 @@ export async function showChat(id) {
     if (p && p.defaultModel) selectModel(p.defaultModel);
   }
   app.currentChatId = state.chat.id;
+  await syncToolsSelect();
   $("title").textContent = state.chat.messages.length ? state.chat.title : "Chat";
   await renderProjectBar();
   renderMessages();
   renderStats();
+}
+
+// The chat's tool mode, else its project's, else the app setting.
+async function toolsModeFor(chat) {
+  if (chat.toolsMode) return chat.toolsMode;
+  const p = await app.projects.getProject(chat.projectId);
+  if (p && p.toolsMode) return p.toolsMode;
+  return (await app.settings.get()).toolsMode || "off";
+}
+async function syncToolsSelect() {
+  $("toolsSelect").value = await toolsModeFor(state.chat);
 }
 
 async function renderProjectBar() {
@@ -151,6 +169,7 @@ async function runAssistant() {
   const project = await app.projects.getProject(chat.projectId);
   const history = chat.messages.map((m) => ({ role: m.role, content: m.content }));
   if (project && project.instructions) history.unshift({ role: "system", content: project.instructions });
+  const mode = await toolsModeFor(chat);
   const stream = streamingEl(app.llm.model.label);
   $("messages").append(stream.el);
   $("messages").scrollTop = $("messages").scrollHeight;
@@ -178,7 +197,21 @@ async function runAssistant() {
 
   const msg = { role: "assistant", content: "", at: Date.now(), model: app.llm.modelId, modelLabel: app.llm.model.label };
   try {
-    const res = await app.llm.generate(history, { onToken, conversationId: chat.id, projectId: chat.projectId });
+    let messages = history;
+    if (mode !== "off") {
+      stream.update("", "Deciding whether to use tools…");
+      const r = await app.tools.runToolLoop(app.llm, history, {
+        mode,
+        onStep: (s) => {
+          stream.setTools(s);
+          if (s.status === "running") stream.update("", `Using ${s.tool}…`);
+        },
+      });
+      messages = r.messages;
+      if (r.calls.length) msg.tools = r.calls.map((c) => ({ ...c, result: c.result.slice(0, 1200) }));
+      if (r.calls.length) app.emit("usage", { event: "tools-used", tools: r.calls.map((c) => c.tool) });
+    }
+    const res = await app.llm.generate(messages, { onToken, conversationId: chat.id, projectId: chat.projectId });
     const { text, gen } = res;
     msg.content = text;
     msg.stats = {

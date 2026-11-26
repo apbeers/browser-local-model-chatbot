@@ -160,6 +160,23 @@ export async function render(root) {
     ),
   );
 
+  // Tools
+  const toolSel = h(
+    "select",
+    { class: "select", id: "tools-mode" },
+    [["off", "Off"], ["offline", "Offline tools"], ["web", "Offline tools + web"]].map(([v, l]) => h("option", { value: v, selected: s.toolsMode === v ? true : null }, l)),
+  );
+  toolSel.onchange = () => app.settings.set("toolsMode", toolSel.value).then(() => toast("Saved"));
+  page.append(
+    h("h2", null, "Tools"),
+    card(
+      h("div", { class: "row" }, h("label", { for: "tools-mode", class: "spacer" }, "Default for new chats"), toolSel),
+      note(
+        `Offline tools: ${app.tools.available("offline").map((t) => t.name).join(", ")}. Web adds ${app.tools.TOOLS.filter((t) => t.network).map((t) => t.name).join(", ")}: these only reach sites that allow browser access. Change it per chat in the message box, or per project.`,
+      ),
+    ),
+  );
+
   // Data
   page.append(
     h("h2", null, "Delete data"),

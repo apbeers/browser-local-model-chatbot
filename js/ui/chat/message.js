@@ -40,9 +40,20 @@ export function messageEl(m, { onRegenerate } = {}) {
   return h(
     "div",
     { class: "msg msg-assistant" },
+    m.tools && m.tools.length ? toolsEl(m.tools) : null,
     h("div", { class: "bubble", html: renderMarkdown(m.content) }),
     m.error ? h("div", { class: "msg-error" }, "Error: " + m.error) : null,
     meta,
+  );
+}
+
+// "Used 2 tools" with each call's input and result.
+export function toolsEl(calls) {
+  return h(
+    "details",
+    { class: "tool-calls" },
+    h("summary", null, `Used ${calls.length} tool${calls.length === 1 ? "" : "s"}: ${calls.map((c) => c.tool).join(", ")}`),
+    calls.map((c) => h("div", { class: "tool-call" }, h("div", { class: "mono" }, `${c.tool}(${JSON.stringify(c.input)})`), c.result ? h("pre", null, c.result) : h("div", { class: "note" }, "running…"))),
   );
 }
 
@@ -50,12 +61,22 @@ export function messageEl(m, { onRegenerate } = {}) {
 export function streamingEl(modelLabel) {
   const bubble = h("div", { class: "bubble cursor" });
   const status = h("span", null, "Prefilling…");
-  const el = h("div", { class: "msg msg-assistant" }, bubble, h("div", { class: "msg-meta" }, h("span", null, modelLabel), status));
+  const toolBox = h("div");
+  const calls = [];
+  const el = h("div", { class: "msg msg-assistant" }, toolBox, bubble, h("div", { class: "msg-meta" }, h("span", null, modelLabel), status));
   return {
     el,
     update(text, liveText) {
       bubble.innerHTML = renderMarkdown(text);
       status.textContent = liveText;
+    },
+    // s = {tool, input, status, result}
+    setTools(s) {
+      const i = calls.findIndex((c) => c.tool === s.tool && c.input === s.input);
+      if (i >= 0) calls[i] = s;
+      else calls.push(s);
+      toolBox.replaceChildren(toolsEl(calls));
+      toolBox.firstChild.open = true;
     },
   };
 }

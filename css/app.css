@@ -2108,3 +2108,47 @@ dialog:has(.preview-frame) {
     border-bottom: 1px solid var(--border);
   }
 }
+
+/* ---------- Tools ---------- */
+.tools-select {
+  align-self: center;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 4px 8px;
+  max-width: 120px;
+}
+.tool-calls {
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  background: var(--surface);
+}
+.tool-calls summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.tool-call {
+  margin-top: 8px;
+}
+.tool-call pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 200px;
+  overflow: auto;
+  background: var(--surface-2);
+  padding: 8px;
+  border-radius: 6px;
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+@media (max-width: 820px) {
+  .tools-select {
+    max-width: 92px;
+  }
+}

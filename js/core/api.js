@@ -21,6 +21,7 @@ import * as appsMod from "./apps.js";
 import * as runtime from "./app-runtime.js";
 import * as agent from "./agent.js";
 import * as pins from "./pins.js";
+import * as tools from "./tools.js";
 import * as install from "./install.js";
 import * as device from "./device.js";
 import { findModel, GROUP_LABELS } from "./catalog.js";
@@ -64,6 +65,10 @@ export const app = {
   agent,
   /** Home Screen pins for Studio apps: createPin(appInfo, html) -> URL to open, isPinned(id), removePin(id). */
   pins,
+  /** Tools for chats: TOOLS, available(mode), callTool(name, input), runToolLoop(llm, history, {mode, onStep}). */
+  tools,
+  /** Tools offered to Studio apps (public ones only: no chats or notes). */
+  appTools: tools.appTools("web"),
   install,
   device,
   opfsAvailable,

@@ -27,8 +27,16 @@ const { loaded, model, busy } = await appkit.ai.status();
 ```
 Wrap AI calls in try/catch and show `err.message`; the model may be busy or not loaded.
 
-## Tools
-`await appkit.tools.list()` lists allowed tools; `await appkit.tools.call("wikipedia", { query: "Paris" })`.
+## Tools (one text input each; results are text)
+```js
+const facts = await appkit.tools.call("wikipedia", "Eiffel Tower");
+const forecast = await appkit.tools.call("weather", "Paris");
+const news = await appkit.tools.call("hacker_news", "");          // front page
+const page = await appkit.tools.call("fetch_url", "https://…");    // only sites that allow browser access
+const exact = await appkit.tools.call("calculator", "(12.5*4)+sqrt(16)");
+const now = await appkit.tools.call("datetime", "");
+```
+Internet tools need a connection; wrap calls in try/catch. `await appkit.tools.list()` lists them.
 
 ## Other
 - `appkit.notify("Saved!")` shows a message in the host app.

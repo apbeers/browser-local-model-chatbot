@@ -148,6 +148,11 @@ export function editProject(p) {
     for (const m of app.catalog ? app.catalog.quick : []) model.append(h("option", { value: m.id, selected: p && p.defaultModel === m.id ? true : null }, m.label));
     const del = h("select", { class: "select", style: "width:100%" }, h("option", { value: "inherit" }, "Use the app setting"));
     for (const [v, label] of app.settings.AUTO_DELETE_OPTIONS) del.append(h("option", { value: String(v), selected: p && p.autoDeleteDays === v ? true : null }, label.replace("unused", "not opened")));
+    const tools = h(
+      "select",
+      { class: "select", style: "width:100%" },
+      [["", "Use the app setting"], ["off", "Off"], ["offline", "Offline tools"], ["web", "Offline tools + web"]].map(([v, l]) => h("option", { value: v, selected: (p && p.toolsMode ? p.toolsMode : "") === v ? true : null }, l)),
+    );
     const field = (label, el) => h("label", { class: "field" }, h("span", null, label), el);
     let saved = null;
     const dlg = modal(
@@ -162,6 +167,7 @@ export function editProject(p) {
               instructions: instr.value.trim(),
               defaultModel: model.value || null,
               autoDeleteDays: del.value === "inherit" ? null : Number(del.value),
+              toolsMode: tools.value || null,
             };
             saved = p ? await app.projects.updateProject(p.id, data) : await app.projects.createProject(data);
             app.emit("projects-changed");
@@ -172,6 +178,7 @@ export function editProject(p) {
         field("Name", name),
         field("Instructions", instr),
         field("Default model for new chats", model),
+        field("Tools in this project's chats", tools),
         field("Auto-delete chats in this project", del),
         h("div", { class: "row", style: "justify-content:flex-end;margin-top:14px" }, h("button", { class: "btn btn-primary" }, p ? "Save" : "Create")),
       ),
