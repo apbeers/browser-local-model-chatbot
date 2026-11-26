@@ -5,6 +5,7 @@ import { app } from "../../core/api.js";
 import { h, toast, confirmDialog, promptDialog, relTime, modal } from "../dom.js";
 import { workspace } from "../studio/workspace.js";
 import { appAdapter, uiAdapter } from "../studio/adapters.js";
+import { pinApp } from "../studio/pin.js";
 
 const V = () => app.variants;
 const pendingRequest = new Map(); // app id -> first request to send when the workspace opens
@@ -111,6 +112,7 @@ async function home(root) {
             { class: "row" },
             h("a", { class: "btn btn-sm btn-primary", href: `#/run/${a.id}` }, "Open"),
             h("a", { class: "btn btn-sm", href: `#/studio/app/${a.id}` }, "Edit"),
+            h("button", { class: "btn btn-sm", type: "button", onclick: () => pinApp(a.id) }, "Pin"),
             h(
               "button",
               {

@@ -12,11 +12,12 @@
 //    A request with ?__default=1 always gets the default file.
 // VERSION and ASSETS are rewritten by tools/build_sw.mjs.
 
-const VERSION = "d457e36036ab";
+const VERSION = "964c0225a732";
 const ASSETS = [
   "./",
   "index.html",
   "recover.html",
+  "pin.html",
   "manifest.webmanifest",
   "models.json",
   "css/app.css",
@@ -37,6 +38,8 @@ const ASSETS = [
   "js/core/llm-worker.js",
   "js/core/models.js",
   "js/core/opfs.js",
+  "js/core/pin-host.js",
+  "js/core/pins.js",
   "js/core/projects.js",
   "js/core/retention.js",
   "js/core/stats.js",
@@ -63,6 +66,7 @@ const ASSETS = [
   "js/ui/studio/changes-tab.js",
   "js/ui/studio/console-tab.js",
   "js/ui/studio/files-tab.js",
+  "js/ui/studio/pin.js",
   "js/ui/studio/preview-tab.js",
   "js/ui/studio/workspace.js",
   "js/ui/views/benchmark.js",
@@ -187,6 +191,23 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (!url.href.startsWith(SCOPE)) return; // Hugging Face, GitHub and other origins
   const path = url.href.slice(SCOPE.length).split(/[?#]/)[0];
+
+  // Pinned apps: pins/<id>/ is the locked host page; manifest and icons come from Cache "pins".
+  const pin = path.match(/^pins\/([\w-]+)\/(.*)$/);
+  if (pin) {
+    event.respondWith(
+      (async () => {
+        if (!pin[2] || pin[2] === "index.html") {
+          const page = await shell(new Request(new URL("pin.html", SCOPE)), "pin.html");
+          const html = (await page.text()).replaceAll("__PIN_ID__", pin[1]);
+          return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } });
+        }
+        const hit = await (await caches.open("pins")).match(SCOPE + path);
+        return hit || new Response("Not found", { status: 404 });
+      })(),
+    );
+    return;
+  }
 
   // Page loads: decide which UI this tab uses, then serve the page.
   if (req.mode === "navigate") {

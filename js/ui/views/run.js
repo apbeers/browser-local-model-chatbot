@@ -20,6 +20,7 @@ export async function render(root, [appId]) {
       h("a", { class: "btn btn-sm", href: "#/studio" }, "← Studio"),
       h("strong", { class: "run-title" }, `${info.emoji || ""} ${info.name}`),
       h("a", { class: "btn btn-sm", href: `#/studio/app/${info.id}` }, "Edit"),
+      h("button", { class: "btn btn-sm", type: "button", onclick: () => import("../studio/pin.js").then((m) => m.pinApp(info.id)) }, "Pin"),
     ),
     frameBox,
   );

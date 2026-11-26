@@ -131,6 +131,7 @@ export async function workspace(root, adapter, { initialRequest } = {}) {
         h("span", { class: "badge" }, adapter.kind === "app" ? "App" : "Chatbot UI"),
         h("span", { class: "spacer" }),
         adapter.kind === "app" ? h("a", { class: "btn btn-sm", href: `#/run/${adapter.id}` }, "Open app") : null,
+        adapter.kind === "app" ? h("button", { class: "btn btn-sm", type: "button", onclick: () => import("./pin.js").then((m) => m.pinApp(adapter.id)) }, "Pin") : null,
       ),
       draftBar,
       panels.chat,

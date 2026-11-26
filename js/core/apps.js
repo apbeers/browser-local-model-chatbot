@@ -37,10 +37,11 @@ async function patch(id, fields) {
   return a;
 }
 
-export async function createApp({ name = "New app", emoji = "✨", description = "", template = "blank", html = "" } = {}) {
+// id: only given when restoring a pinned app into a fresh storage (iOS Home Screen apps).
+export async function createApp({ id = null, name = "New app", emoji = "✨", description = "", template = "blank", html = "" } = {}) {
   const all = await listApps();
   const now = Date.now();
-  const a = { id: uid(), name, emoji, color: COLORS[all.length % COLORS.length], description, template, createdAt: now, updatedAt: now };
+  const a = { id: id || uid(), name, emoji, color: COLORS[all.length % COLORS.length], description, template, createdAt: now, updatedAt: now };
   all.push(a);
   await saveIndex(all);
   await writeText(`${ROOT}/${a.id}/index.html`, html);

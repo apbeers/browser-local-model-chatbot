@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 await import("./build_docs.mjs"); // regenerate docs/files.json first
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const files = ["index.html", "recover.html", "manifest.webmanifest", "models.json"];
+const files = ["index.html", "recover.html", "pin.html", "manifest.webmanifest", "models.json"];
 const walk = (dir) => {
   for (const f of fs.readdirSync(path.join(repo, dir)).sort()) {
     const rel = path.posix.join(dir, f);
