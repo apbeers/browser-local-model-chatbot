@@ -46,6 +46,9 @@ export function initChatView() {
     if (chat.messages.length) await app.chats.updateChat(chat.id, { toolsMode: chat.toolsMode });
     app.emit("usage", { event: "tools-mode", mode: chat.toolsMode });
   });
+  // Models unloaded automatically to free GPU memory.
+  app.llm.addEventListener("auto-unloaded", (e) => showBanner(`${e.detail.model.label}: ${e.detail.reason} It loads again when you send a message.`));
+  app.llm.addEventListener("freed-memory", (e) => toast(`Unloaded ${e.detail.models.join(", ")} in another window to free GPU memory.`, 5000));
   app.llm.addEventListener("state", () => {
     const gen = app.llm.state === "generating";
     $("sendBtn").classList.toggle("stop", gen);

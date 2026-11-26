@@ -70,6 +70,8 @@ app.loadModel = async (modelId) => {
   }
 };
 
+app.llm.addEventListener("auto-unloaded", (e) => toast(`${e.detail.model.label} was unloaded to free memory; it loads again when the app needs it.`));
+
 function installHint() {
   if (app.install.isStandalone()) return;
   try {

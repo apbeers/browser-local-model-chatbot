@@ -68,6 +68,17 @@ export async function render(root) {
       h("dd", null, est ? `${fmtBytes(est.usage)} used of ${fmtBytes(est.quota)} available to this site` : "unknown"),
       h("dt", null, "Persistent storage"),
       h("dd", null, persisted == null ? "unknown" : persisted ? "granted (the browser won't clear it on its own)" : "not granted (the browser may clear it when space runs low)"),
+      h("dt", null, "GPU memory"),
+      h(
+        "dd",
+        null,
+        (() => {
+          const here = app.llm.modelId ? [`${app.llm.model.label} here (≈${fmtBytes(app.memory.estimateMB(app.llm.model, app.llm.contextWindow) * 1048576)})`] : [];
+          const there = app.memory.loadedElsewhere().map((p) => `${p.label} in another window (≈${fmtBytes(p.mb * 1048576)})`);
+          const all = [...here, ...there];
+          return `${all.length ? all.join(", ") : "No model loaded"}. Budget ≈ ${fmtBytes(app.memory.budgetMB() * 1048576)}: when a new model wouldn't fit, idle models in other windows unload automatically.`;
+        })(),
+      ),
       h("dt", null, "GPU"),
       h("dd", null, gpuLabel(app.gpu) + (app.gpu && app.gpu.available ? (app.gpu.shaderF16 ? " · supports f16 models" : " · f32 models only") : "")),
     ),

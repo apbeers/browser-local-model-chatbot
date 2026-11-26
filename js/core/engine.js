@@ -5,6 +5,7 @@ import { loadCatalog, buildAppConfig, findModel } from "./catalog.js";
 import { Session, errText } from "./stats.js";
 import { scanModelCache, cacheInfo } from "./models.js";
 import { touchModel } from "./retention.js";
+import * as memory from "./memory.js";
 
 const WINDOW = 16; // tokens per throughput window (for throttling curves)
 
@@ -27,6 +28,10 @@ export class LLM extends EventTarget {
     this.loadProgress = null;
     this.lastHistoryKey = null;
     this.kvTokens = 0;
+    this.id = crypto.randomUUID ? crypto.randomUUID() : String(Math.random());
+    this.lastUsed = 0;
+    memory.attach(this); // share GPU memory with other open windows
+    memory.unloadWhenHidden(this);
   }
 
   emit(type, detail) {
@@ -36,6 +41,7 @@ export class LLM extends EventTarget {
   setState(s) {
     this.state = s;
     this.emit("state", s);
+    memory.announce(this);
   }
 
   async init() {
@@ -52,6 +58,16 @@ export class LLM extends EventTarget {
     if (this.session) {
       await this.session.end();
       this.session = null;
+    }
+    // Start from a fresh worker so the previous model's GPU memory is fully released.
+    if (this.engine) {
+      try {
+        await this.engine.unload();
+      } catch {
+        /* ignore */
+      }
+      this.destroyWorker();
+      this.modelId = null;
     }
     this.setState("loading");
     this.modelId = null;
@@ -94,6 +110,9 @@ export class LLM extends EventTarget {
       }
     }
     const appConfig = buildAppConfig(this.catalog, lib.prebuiltAppConfig);
+    // Ask idle models in other windows to unload if this one wouldn't fit.
+    const freed = await memory.makeRoom(this, model, opts.contextWindow || model.contextWindow);
+    if (freed.length) this.emit("freed-memory", { models: freed });
     let chatOpts;
     if (opts.contextWindow) chatOpts = { context_window_size: opts.contextWindow };
     if (opts.prefillChunk) chatOpts = { ...(chatOpts || {}), prefill_chunk_size: opts.prefillChunk };
@@ -123,6 +142,7 @@ export class LLM extends EventTarget {
       this.contextWindow = contextWindow;
       this.lastHistoryKey = null;
       this.kvTokens = 0;
+      this.lastUsed = Date.now();
       this.setState("ready");
       this.emit("loaded", { model, session });
     } catch (err) {
@@ -147,7 +167,8 @@ export class LLM extends EventTarget {
     this.engine = null;
   }
 
-  async unload() {
+  // opts.reason: shown to the user when the model was unloaded automatically.
+  async unload(opts = {}) {
     if (this.session) await this.session.end();
     this.session = null;
     if (this.engine) {
@@ -158,9 +179,11 @@ export class LLM extends EventTarget {
       }
     }
     this.destroyWorker();
+    const was = this.model;
     this.modelId = null;
     this.model = null;
     this.setState("idle");
+    if (opts.reason && was) this.emit("auto-unloaded", { model: was, reason: opts.reason });
   }
 
   async interrupt() {
@@ -175,6 +198,7 @@ export class LLM extends EventTarget {
   // opts.kind: tag stored with the stats record ("chat", "benchmark", "builder-code", …).
   async generate(messages, { onToken, conversationId, projectId, maxTokens, request, kind, meta } = {}) {
     if (!this.engine || !this.modelId) throw new Error("No model loaded");
+    this.lastUsed = Date.now();
     this.setState("generating");
     this.interrupted = false;
     let msgs = messages;

@@ -34,7 +34,7 @@
    "path": "js/ui/chat/chat-view.js",
    "summary": "The chat page: opens chats, sends messages, streams replies.",
    "doc": "components/chat-view.md",
-   "lines": 265
+   "lines": 268
   },
   {
    "path": "js/ui/chat/model-picker.js",
@@ -88,7 +88,7 @@
    "path": "js/ui/views/models.js",
    "summary": "Models page: downloads, storage, auto-delete.",
    "doc": "components/views.md",
-   "lines": 264
+   "lines": 275
   },
   {
    "path": "js/ui/views/benchmark.js",

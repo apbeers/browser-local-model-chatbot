@@ -24,6 +24,7 @@ import * as pins from "./pins.js";
 import * as tools from "./tools.js";
 import * as usage from "./usage.js";
 import * as storage from "./storage.js";
+import * as memory from "./memory.js";
 import * as install from "./install.js";
 import * as device from "./device.js";
 import { findModel, GROUP_LABELS } from "./catalog.js";
@@ -75,6 +76,8 @@ export const app = {
   usage,
   /** Storage manager: listDir(path), dirSize, readForView, removePath, listCaches, listCacheEntries, readCacheEntry, deleteCache. */
   storage,
+  /** GPU memory sharing between windows: budgetMB(), estimateMB(model, ctx), loadedElsewhere(). */
+  memory,
   install,
   device,
   opfsAvailable,

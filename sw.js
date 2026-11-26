@@ -12,7 +12,7 @@
 //    A request with ?__default=1 always gets the default file.
 // VERSION and ASSETS are rewritten by tools/build_sw.mjs.
 
-const VERSION = "4c410e6449df";
+const VERSION = "ee01fe79eae9";
 const ASSETS = [
   "./",
   "index.html",
@@ -36,6 +36,7 @@ const ASSETS = [
   "js/core/engine.js",
   "js/core/install.js",
   "js/core/llm-worker.js",
+  "js/core/memory.js",
   "js/core/models.js",
   "js/core/opfs.js",
   "js/core/pin-host.js",
