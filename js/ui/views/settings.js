@@ -45,7 +45,7 @@ async function themeSection() {
         { class: "theme-item" + (active ? " active" : "") },
         h("div", { class: "swatches", "aria-hidden": "true" }, sw(t.light.page), sw(t.light.accent), sw(t.dark.page), sw(t.dark.accent)),
         h("strong", null, t.name),
-        active ? h("span", { class: "badge good" }, "In use") : h("button", { class: "btn btn-sm", type: "button", onclick: async () => (await app.themes.activateTheme(t.id), refresh()) }, "Use"),
+        active ? h("span", { class: "badge good" }, "In use") : h("button", { class: "btn btn-sm", type: "button", onclick: async () => (await app.themes.activateTheme(t.id), app.emit("usage", { event: "theme", custom: t.id !== "default" }), refresh()) }, "Use"),
         t.id !== "default" ? h("button", { class: "btn btn-sm", type: "button", onclick: () => openThemeMaker(t, refresh) }, "Edit") : null,
         t.id !== "default"
           ? h(
@@ -157,6 +157,42 @@ export async function render(root) {
       h("div", { class: "row" }, h("label", { for: "auto-delete", class: "spacer" }, "Downloaded models"), autoDeleteSelect()),
       h("div", { class: "row", style: "margin-top:10px" }, h("label", { for: "chat-auto-delete", class: "spacer" }, "Chats"), chatSel),
       note("Off by default. Checked when the app opens and every few hours. The loaded model and the open chat are never deleted. Projects can override the chat setting."),
+    ),
+  );
+
+  // Usage log
+  const chk = (key, label) => {
+    const box = h("input", { type: "checkbox", id: "set-" + key, checked: s[key] !== false ? true : null });
+    box.onchange = () => app.settings.set(key, box.checked).then(() => toast("Saved"));
+    return h("label", { class: "row", for: "set-" + key }, box, h("span", null, label));
+  };
+  const usageSummary = h("p", { class: "note" });
+  app.usage.summarize().then((u) => (usageSummary.textContent = u.events ? `${u.events} events over ${u.activeDays} day(s); ${u.topics.length} chat topic(s).` : "Nothing logged yet."));
+  page.append(
+    h("h2", null, "Usage log"),
+    card(
+      chk("usageLog", "Log which features I use (stored only on this device; never message text)"),
+      chk("usageTopics", "Also label each chat's topic in 1–3 words (made on this device)"),
+      usageSummary,
+      h(
+        "div",
+        { class: "row" },
+        h("button", { class: "btn btn-primary", type: "button", onclick: () => import("../studio/personalize.js").then((m) => m.personalize()) }, "Customize the app for me"),
+        h("a", { class: "btn", href: "#/storage" }, "See the log files"),
+        h(
+          "button",
+          {
+            class: "btn btn-danger",
+            type: "button",
+            onclick: async () => {
+              if (!(await confirmDialog("Delete the usage log?", "All logged usage on this device is removed."))) return;
+              await app.usage.clear();
+              usageSummary.textContent = "Nothing logged yet.";
+            },
+          },
+          "Delete log",
+        ),
+      ),
     ),
   );
 

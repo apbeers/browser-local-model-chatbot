@@ -22,6 +22,8 @@ import * as runtime from "./app-runtime.js";
 import * as agent from "./agent.js";
 import * as pins from "./pins.js";
 import * as tools from "./tools.js";
+import * as usage from "./usage.js";
+import * as storage from "./storage.js";
 import * as install from "./install.js";
 import * as device from "./device.js";
 import { findModel, GROUP_LABELS } from "./catalog.js";
@@ -69,6 +71,10 @@ export const app = {
   tools,
   /** Tools offered to Studio apps (public ones only: no chats or notes). */
   appTools: tools.appTools("web"),
+  /** Usage log (device only): log(event, details), readEvents(), summarize(), clear(), labelChat(llm, chat). */
+  usage,
+  /** Storage manager: listDir(path), dirSize, readForView, removePath, listCaches, listCacheEntries, readCacheEntry, deleteCache. */
+  storage,
   install,
   device,
   opfsAvailable,
@@ -85,6 +91,7 @@ export const app = {
 
   async init() {
     install.initInstall();
+    usage.attach(app);
     themes.restoreTheme().catch(() => {});
     try {
       app.catalog = await llm.init();

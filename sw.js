@@ -12,7 +12,7 @@
 //    A request with ?__default=1 always gets the default file.
 // VERSION and ASSETS are rewritten by tools/build_sw.mjs.
 
-const VERSION = "bda886783179";
+const VERSION = "76a1785a5521";
 const ASSETS = [
   "./",
   "index.html",
@@ -43,8 +43,10 @@ const ASSETS = [
   "js/core/projects.js",
   "js/core/retention.js",
   "js/core/stats.js",
+  "js/core/storage.js",
   "js/core/themes.js",
   "js/core/tools.js",
+  "js/core/usage.js",
   "js/core/variants.js",
   "js/core/version.js",
   "js/ui/charts.js",
@@ -67,6 +69,7 @@ const ASSETS = [
   "js/ui/studio/changes-tab.js",
   "js/ui/studio/console-tab.js",
   "js/ui/studio/files-tab.js",
+  "js/ui/studio/personalize.js",
   "js/ui/studio/pin.js",
   "js/ui/studio/preview-tab.js",
   "js/ui/studio/workspace.js",
@@ -77,6 +80,7 @@ const ASSETS = [
   "js/ui/views/models.js",
   "js/ui/views/run.js",
   "js/ui/views/settings.js",
+  "js/ui/views/storage.js",
   "js/ui/views/studio-model.js",
   "js/ui/views/studio.js",
   "js/ui/views/theme-maker.js",

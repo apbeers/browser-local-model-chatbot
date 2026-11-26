@@ -18,8 +18,9 @@ const VIEWS = {
   studio: () => import("./views/studio.js"),
   settings: () => import("./views/settings.js"),
   run: () => import("./views/run.js"),
+  storage: () => import("./views/storage.js"),
 };
-const TITLES = { chat: "Chat", models: "Models", dashboard: "Stats dashboard", benchmark: "Benchmark", studio: "Studio", settings: "Settings", run: "App" };
+const TITLES = { chat: "Chat", models: "Models", dashboard: "Stats dashboard", benchmark: "Benchmark", studio: "Studio", settings: "Settings", run: "App", storage: "Storage" };
 
 async function route() {
   const [, view = "chat", id, ...rest] = (location.hash || "#/chat").split("/");
@@ -33,6 +34,7 @@ async function route() {
   // Studio workspaces and running apps use the full width on desktop.
   $("app").classList.toggle("focus-mode", (v === "studio" && !!id) || v === "run");
   setSidebar(false);
+  app.emit("usage", { event: "page", page: v, mobile: matchMedia("(max-width: 820px)").matches, wide: innerWidth >= 1800 });
   if (v === "chat") {
     await showChat(id ? decodeURIComponent(id) : null);
   } else {

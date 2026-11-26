@@ -2152,3 +2152,64 @@ dialog:has(.preview-frame) {
     max-width: 92px;
   }
 }
+
+/* ---------- Storage manager ---------- */
+.st-tree {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+.st-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.st-dir > summary {
+  cursor: pointer;
+  list-style: none;
+}
+.st-dir > summary::before {
+  content: "▸";
+  color: var(--muted);
+  width: 12px;
+}
+.st-dir[open] > summary::before {
+  content: "▾";
+}
+.st-name {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  overflow-wrap: anywhere;
+}
+.st-name small {
+  color: var(--ink-2);
+  font-size: 12px;
+}
+.st-meta {
+  color: var(--ink-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.st-children {
+  padding-left: 16px;
+  border-left: 2px solid var(--surface-3);
+  margin-left: 12px;
+}
+.storage-view {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 60vh;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--surface-2);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+}

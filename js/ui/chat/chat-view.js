@@ -238,4 +238,18 @@ async function runAssistant() {
   if (state.chat === chat) renderMessages();
   renderStats();
   app.emit("chats-changed");
+  // Usage log: label the chat's topic once, after its first reply, when the model is idle.
+  if (!chat.topic && !msg.error) {
+    setTimeout(async () => {
+      try {
+        const topic = await app.usage.labelChat(app.llm, chat);
+        if (topic) {
+          chat.topic = topic; // keep it when the open chat is saved again
+          await app.chats.updateChat(chat.id, { topic });
+        }
+      } catch {
+        /* optional */
+      }
+    }, 1500);
+  }
 }

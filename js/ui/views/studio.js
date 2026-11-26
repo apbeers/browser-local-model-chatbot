@@ -82,6 +82,15 @@ async function home(root) {
     ),
   );
 
+  page.append(
+    h(
+      "div",
+      { class: "card row", style: "margin-top:12px" },
+      h("div", { class: "spacer", style: "min-width:220px" }, h("strong", null, "Customize for me"), h("div", { class: "note" }, "Builds a version of this chatbot around how you use it: menu order, start page, example prompts and look.")),
+      h("button", { class: "btn", type: "button", onclick: () => import("../studio/personalize.js").then((m) => m.personalize()) }, "Analyze my usage"),
+    ),
+  );
+
   // Templates
   const { templates } = JSON.parse(await app.builder.loadDoc("templates/index.json"));
   page.append(

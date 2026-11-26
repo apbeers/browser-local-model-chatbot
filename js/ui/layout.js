@@ -10,6 +10,7 @@ export const NAV = [
   ["dashboard", "Stats dashboard", "M4 20V10M10 20V4M16 20v-7M22 20H2"],
   ["benchmark", "Benchmark", "M12 21a9 9 0 1 1 9-9M12 12l5-5"],
   ["studio", "Studio", "M4 20h4L19 9l-4-4L4 16zM14 6l4 4"],
+  ["storage", "Storage", "M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"],
   ["settings", "Settings", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"],
 ];
 
