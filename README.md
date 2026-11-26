@@ -2,53 +2,68 @@
 
 **Open the app: https://apbeers.github.io/browser-local-model-chatbot/**
 
-A browser chatbot for measuring how well small language models run **on-device** in different browsers, phones, tablets and computers. Models run on the GPU via WebGPU. Nothing is sent to a server.
+A chat app that runs language models **on your device** with WebGPU, measures how fast they run, and lets you **build your own version of the app** with an on-device coding model. Nothing is sent to a server.
 
-- **Engine:** [WebLLM](https://github.com/mlc-ai/web-llm) 0.2.88 (Apache-2.0), vendored at `vendor/web-llm/`. It's the only third-party code; the UI, Markdown renderer, storage, stats and charts are all hand-written.
-- **Models:** downloaded straight from the [mlc-ai builds on Hugging Face](https://huggingface.co/mlc-ai) the first time they're used. Nothing is hosted in this repo.
-- **Storage:** everything is kept in the browser's Origin Private File System (OPFS): downloaded models, chats and stats.
-- **Offline:** an installable PWA (Add to Home Screen on iPhone/iPad/Android, Install on desktop). After the first visit the app opens with no network, and any downloaded model loads with no network.
+- **Engine:** [WebLLM](https://github.com/mlc-ai/web-llm) 0.2.89 (Apache-2.0), vendored in `vendor/web-llm/`. It is the only third-party code; the UI, Markdown, charts, storage and stats are hand-written.
+- **Models:** downloaded from the [mlc-ai builds on Hugging Face](https://huggingface.co/mlc-ai) the first time they're used and saved in the browser. Nothing is hosted in this repo.
+- **Storage:** everything stays on the device in the Origin Private File System (OPFS): models, chats, projects, stats, settings, themes and custom UIs.
+- **Offline:** an installable PWA (Add to Home Screen on iPhone/iPad/Android, Install on desktop). After the first visit the app and any downloaded model work with no connection.
 
 ## Features
 
-- Multiple saved conversations (rename/delete), Markdown replies (code blocks with copy, lists, tables, quotes).
-- Model picker with 24 common models grouped by download size (small / medium / large), a ✓ on models already saved, and GPU compatibility (`shader-f16`). Settings can add every other WebLLM model (about 110 more).
-- **Models page:** see which models are saved in the browser and how much space they use; delete one or all; request persistent storage.
-- **Auto-delete:** optionally remove downloaded models that haven't been used for 30, 60 or 90 days (default: never). Checked when the app opens and every few hours; the loaded model is never deleted.
-- **Live stats** in the chat: decode tok/s (live while streaming), prefill tok/s, time to first token, context used / context window, session totals, load time (cache vs download), GPU.
-- **Stats dashboard:** every session is written to OPFS as it runs (`app/stats/sessions/<id>.json`). Filter by model, device and time range. KPIs, charts (speed by model × device, speed over time, throttling across a long reply, speed vs context, TTFT vs prompt size, load times), a group-by summary table (model, device, model × device, browser, OS, GPU, day), per-session details and deletion.
-- **Compare devices:** name each device in Settings, export its stats as JSON, then import exports from other devices into one dashboard.
-- Light / dark / system theme; works from phone width up.
+- **Chat** with Markdown replies, regenerate, copy, and live speed numbers (decode and prefill tok/s, time to first token, context used / window, session totals, load time, GPU).
+- **Projects:** groups of chats with optional instructions (sent as a system prompt), a default model and their own auto-delete setting. Move chats between projects; delete a chat, a project (keeping or deleting its chats) or everything.
+- **Search** across all chats, and **export** a chat or a project as Markdown or JSON.
+- **Models:** 24 common models grouped by size, with ✓ on downloaded ones; optionally every WebLLM model (about 120 more). The Models page shows storage use and deletes models.
+- **Auto-delete** (off by default): downloaded models unused for 30/60/90 days; chats not opened for 30/60/90 days, globally or per project.
+- **Stats dashboard:** every session is logged to OPFS as it runs. Filter by model, device, project, type (chat, benchmark, Studio) and time; charts, a group-by table and per-session details. Export JSON on each device and import them to compare devices.
+- **Benchmark:** fixed prompts, greedy decoding and a fixed seed, so devices and models are compared fairly.
+- **Themes:** the built-in light/dark theme plus your own. Describe one ("calm forest greens") and the on-device coding model designs it, or pick colors by hand. Contrast is checked and previewed before saving.
+- **Studio (build your own app):** copy the default UI, then change styles or any screen with the coding model or by hand. Suggested code is syntax-checked and shown as a diff before it's saved; every save can be undone. Keep several UIs and switch between them or preview one in a window.
 
-## What's recorded per session
+## How custom UIs work
 
-Device: browser and version, OS, device model (where exposed), CPU cores, `deviceMemory`, screen, GPU adapter info, features and limits, battery level/charging (where exposed).
-
-Load: whether the model was already cached, total load time, time per phase (download / cache read / other), download size and MB/s, errors.
-
-Per reply: prompt tokens processed, output tokens, context tokens in the KV cache, engine-reported prefill and decode tok/s, client-measured TTFT and wall-clock tok/s, end-to-end latency, tok/s in 16-token windows (for throttling), finish reason, battery, JS heap. Load failures, generation errors and GPU device loss are logged too. Browsers without WebGPU are logged once as a failed session.
-
-## Models
-
-The quick-select list lives in `tools/build_catalog.mjs`. To change it, edit `QUICK` and regenerate `models.json`, which records exact download sizes from the Hugging Face API:
-
-```sh
-NODE_USE_ENV_PROXY=1 node tools/build_catalog.mjs   # NODE_USE_ENV_PROXY only needed behind a proxy
-node tools/build_sw.mjs
+```
+index.html (locked boot shell + startup watchdog)
+   └─ js/ui/**, css/**   UI layer      ← customizable; a custom UI stores replacement files in OPFS
+        └─ app object (js/core/api.js) ← the only way UI code reaches the core
+             └─ js/core/**  core        ← locked: storage, engine, stats, themes, custom UIs, builder
+                  └─ vendor/web-llm, sw.js
 ```
 
-Any model in WebLLM's prebuilt list can be added. Weights come from `huggingface.co/mlc-ai/<model>`; the compiled model libraries come from the `mlc-ai/binary-mlc-llm-libs` GitHub repo.
+- A custom UI is a set of replacement files for `css/*.css` and `js/ui/*.js`, stored in OPFS and mirrored to Cache Storage. The service worker serves the custom file when one exists and the default otherwise.
+- The core (`js/core/`), `index.html`, `recover.html`, `sw.js` and WebLLM can't be overridden, so chats and stats stay safe and compatible.
+- **Safety net:** add `?safe` to the address for the default UI; `recover.html` lists, switches and deletes custom UIs without running any app code; if a custom UI fails to start within 12 seconds the app offers the default and switches back automatically on the next launch.
+- Custom UIs record the API version they were built for, and Studio flags them when the app's API changes.
+- UIs and themes can't be imported from elsewhere. Custom code runs with the same access as the app, so only code made on the device is used.
+
+### The coding model
+
+Studio and the theme maker use **Qwen2.5-Coder 1.5B** (about 880 MB, f32 version on GPUs without f16). WebLLM builds it with a 4k context, so the builder loads it with **16k tokens on desktops and 8k on phones**. Because it's a small model, every request gets only:
+
+1. `docs/STUDIO_RULES.md`: explicit rules (output the whole file, keep exports, use `h()` and CSS variables).
+2. The docs for that one file (`docs/files.json` maps each file to its doc and summary), plus `docs/API.md` and `docs/ARCHITECTURE.md` (or `THEMING.md` and `CSS_CLASSES.md` for styles).
+3. The current file and the request.
+
+Themes use JSON-schema-constrained output, so the model can only answer with valid color values.
+
+## Docs shipped to the browser
+
+`docs/` is part of the app and is cached for offline use:
+`ARCHITECTURE.md` (diagram and data flow), `API.md` (the `app` object), `THEMING.md` (color tokens), `CSS_CLASSES.md`, `STUDIO_RULES.md`, `components/*.md` (one per UI file) and `files.json`.
 
 ## Development
 
-No build step. Serve the folder over http(s) and open it:
+No build step. Serve the folder and open it:
 
 ```sh
 python3 -m http.server 8000
 ```
 
-After changing any app file, run `node tools/build_sw.mjs` to bump the service-worker cache version.
+After changing any file, run `node tools/build_sw.mjs`. It regenerates `docs/files.json` and the service-worker file list and cache version, so installed copies update.
+
+To change the quick-select models, edit `QUICK` in `tools/build_catalog.mjs` and run it (it reads exact download sizes from the Hugging Face API; `NODE_USE_ENV_PROXY=1` behind a proxy), then `node tools/build_sw.mjs`.
 
 ## Deploying
 
-GitHub Pages serves `main` from the repo root. Run `node tools/build_sw.mjs` before pushing app changes so installed copies update.
+GitHub Pages serves `main` from the repo root.

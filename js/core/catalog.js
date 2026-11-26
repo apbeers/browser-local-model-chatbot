@@ -3,7 +3,7 @@
 // "more"  = every other WebLLM prebuilt chat model (shown when enabled in Settings).
 // Weights download straight from Hugging Face; model libraries from GitHub.
 
-const CATALOG_URL = new URL("../models.json", import.meta.url).href;
+const CATALOG_URL = new URL("../../models.json", import.meta.url).href;
 let catalogPromise = null;
 
 export function sizeGroup(m) {

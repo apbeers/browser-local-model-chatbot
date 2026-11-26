@@ -13,7 +13,8 @@ export const AUTO_DELETE_OPTIONS = [
   [90, "After 90 days unused"],
 ];
 
-const DEFAULTS = { autoDeleteDays: 0, showAllModels: false };
+// autoDeleteDays: models; chatAutoDeleteDays: chats (0 = never). themeId: active color theme.
+const DEFAULTS = { autoDeleteDays: 0, chatAutoDeleteDays: 0, showAllModels: false, themeId: "default" };
 let settingsCache = null;
 
 export async function getSettings() {

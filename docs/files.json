@@ -1,0 +1,130 @@
+{
+ "files": [
+  {
+   "path": "css/custom.css",
+   "summary": "Extra styles loaded after app.css. Empty by default.",
+   "doc": "CSS_CLASSES.md",
+   "lines": 3
+  },
+  {
+   "path": "js/ui/layout.js",
+   "summary": "Builds the page skeleton: sidebar, top bar, chat area, page sections.",
+   "doc": "components/layout.md",
+   "lines": 82
+  },
+  {
+   "path": "js/ui/chat/message.js",
+   "summary": "Draws one chat message (user bubble or assistant reply with stats).",
+   "doc": "components/message.md",
+   "lines": 62
+  },
+  {
+   "path": "js/ui/chat/empty-state.js",
+   "summary": "The screen of a new, empty chat with suggestion buttons.",
+   "doc": "components/empty-state.md",
+   "lines": 56
+  },
+  {
+   "path": "js/ui/chat/stats-strip.js",
+   "summary": "The row of live speed numbers above the chat.",
+   "doc": "components/stats-strip.md",
+   "lines": 52
+  },
+  {
+   "path": "js/ui/chat/chat-view.js",
+   "summary": "The chat page: opens chats, sends messages, streams replies.",
+   "doc": "components/chat-view.md",
+   "lines": 209
+  },
+  {
+   "path": "js/ui/chat/model-picker.js",
+   "summary": "The model dropdown and Load button; loadModel().",
+   "doc": "components/model-picker.md",
+   "lines": 122
+  },
+  {
+   "path": "js/ui/chat/chat-actions.js",
+   "summary": "Menus to rename, move, export and delete chats and projects.",
+   "doc": "components/chat-actions.md",
+   "lines": 183
+  },
+  {
+   "path": "js/ui/sidebar.js",
+   "summary": "Sidebar: new chat, search, projects and chats list.",
+   "doc": "components/sidebar.md",
+   "lines": 135
+  },
+  {
+   "path": "js/ui/main.js",
+   "summary": "Entry point: starts the app and switches pages.",
+   "doc": "components/main.md",
+   "lines": 118
+  },
+  {
+   "path": "js/ui/dom.js",
+   "summary": "Helpers: h() to create elements, dialogs, toast, number formatting.",
+   "doc": "components/dom.md",
+   "lines": 178
+  },
+  {
+   "path": "js/ui/markdown.js",
+   "summary": "Turns Markdown replies into safe HTML.",
+   "doc": "components/helpers.md",
+   "lines": 194
+  },
+  {
+   "path": "js/ui/state.js",
+   "summary": "Shared UI state and localStorage helpers.",
+   "doc": "components/helpers.md",
+   "lines": 30
+  },
+  {
+   "path": "js/ui/views/settings.js",
+   "summary": "Settings page.",
+   "doc": "components/views.md",
+   "lines": 203
+  },
+  {
+   "path": "js/ui/views/models.js",
+   "summary": "Models page: downloads, storage, auto-delete.",
+   "doc": "components/views.md",
+   "lines": 264
+  },
+  {
+   "path": "js/ui/views/benchmark.js",
+   "summary": "Benchmark page.",
+   "doc": "components/views.md",
+   "lines": 129
+  },
+  {
+   "path": "js/ui/views/dashboard.js",
+   "summary": "Stats dashboard: filters and number tiles.",
+   "doc": "components/views.md",
+   "lines": 174
+  },
+  {
+   "path": "js/ui/views/dashboard-charts.js",
+   "summary": "Stats dashboard charts.",
+   "doc": "components/views.md",
+   "lines": 163
+  },
+  {
+   "path": "js/ui/views/dashboard-tables.js",
+   "summary": "Stats dashboard tables and session details.",
+   "doc": "components/views.md",
+   "lines": 315
+  },
+  {
+   "path": "js/ui/charts.js",
+   "summary": "Hand-made SVG charts.",
+   "doc": "components/helpers.md",
+   "lines": 358
+  },
+  {
+   "path": "css/app.css",
+   "summary": "All default styles (large: prefer css/custom.css).",
+   "doc": "CSS_CLASSES.md",
+   "lines": 1631
+  }
+ ]
+}

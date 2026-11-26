@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Recovery · Local LLM Bench</title>
+    <meta name="color-scheme" content="light dark" />
+    <!-- Locked recovery page: no app code, so it works even if a custom UI is broken. -->
+    <style>
+      body { font: 15px/1.5 system-ui, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px 16px; background: Canvas; color: CanvasText; }
+      h1 { font-size: 22px; } h2 { font-size: 16px; margin-top: 28px; }
+      button, a.btn { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #8884; background: transparent; color: inherit; cursor: pointer; text-decoration: none; display: inline-block; }
+      .primary { background: #2a78d6; color: #fff; border-color: transparent; }
+      li { margin: 6px 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .muted { opacity: .7; font-size: 13px; }
+      #msg { min-height: 1.5em; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <h1>Recovery</h1>
+    <p>Use this page if a custom UI stopped the app from working. Your chats, projects, stats and downloaded models are not touched here.</p>
+    <p id="msg" role="status"></p>
+    <p><a class="btn primary" href="./?safe">Open the app with the default UI (this visit only)</a></p>
+    <p><button id="use-default">Make the default UI permanent</button></p>
+    <h2>Custom UIs</h2>
+    <p class="muted" id="active"></p>
+    <ul id="list"><li class="muted">Loading…</li></ul>
+    <h2>Repair the offline app</h2>
+    <p>Clears the cached copy of the app (not your data) and downloads it again. Needs a connection.</p>
+    <p><button id="reset">Reset offline app</button></p>
+    <script>
+      const scope = new URL("./", location.href).href;
+      const msg = (t) => (document.getElementById("msg").textContent = t);
+      async function setActive(id) {
+        const c = await caches.open("ui-meta");
+        await c.put(scope + "__ui/active", new Response(JSON.stringify({ id }), { headers: { "content-type": "application/json" } }));
+        try { localStorage.removeItem("uiBootFailed"); } catch (e) {}
+      }
+      async function getActive() {
+        try { const r = await (await caches.open("ui-meta")).match(scope + "__ui/active"); return r ? (await r.json()).id : "default"; } catch (e) { return "default"; }
+      }
+      async function readVariants() {
+        try {
+          let d = await navigator.storage.getDirectory();
+          for (const p of ["app", "ui"]) d = await d.getDirectoryHandle(p);
+          return JSON.parse(await (await (await d.getFileHandle("index.json")).getFile()).text());
+        } catch (e) { return []; }
+      }
+      async function removeVariant(id) {
+        let d = await navigator.storage.getDirectory();
+        for (const p of ["app", "ui"]) d = await d.getDirectoryHandle(p);
+        try { await d.removeEntry(id, { recursive: true }); } catch (e) {}
+        const list = (await readVariants()).filter((v) => v.id !== id);
+        const w = await (await d.getFileHandle("index.json", { create: true })).createWritable();
+        await w.write(JSON.stringify(list)); await w.close();
+        await caches.delete("ui-" + id);
+        if ((await getActive()) === id) await setActive("default");
+      }
+      async function render() {
+        const active = await getActive();
+        const vs = await readVariants();
+        document.getElementById("active").textContent = "Active UI: " + (active === "default" ? "Default" : (vs.find((v) => v.id === active) || {}).name || active);
+        const ul = document.getElementById("list");
+        ul.innerHTML = vs.length ? "" : '<li class="muted">No custom UIs.</li>';
+        for (const v of vs) {
+          const li = document.createElement("li");
+          const name = document.createElement("strong");
+          name.textContent = v.name;
+          const open = document.createElement("a");
+          open.className = "btn"; open.href = "./?ui=" + encodeURIComponent(v.id); open.textContent = "Try it";
+          const del = document.createElement("button");
+          del.textContent = "Delete";
+          del.onclick = async () => { if (confirm("Delete the custom UI “" + v.name + "”?")) { await removeVariant(v.id); msg("Deleted " + v.name); render(); } };
+          li.append(name, open, del);
+          ul.append(li);
+        }
+      }
+      document.getElementById("use-default").onclick = async () => { await setActive("default"); msg("The default UI is now active."); render(); };
+      document.getElementById("reset").onclick = async () => {
+        for (const k of await caches.keys()) if (k.startsWith("shell-")) await caches.delete(k);
+        const regs = navigator.serviceWorker ? await navigator.serviceWorker.getRegistrations() : [];
+        for (const r of regs) await r.unregister();
+        msg("Offline app reset. Reloading…");
+        setTimeout(() => (location.href = scope + "?safe"), 800);
+      };
+      render();
+    </script>
+  </body>
+</html>

@@ -8,17 +8,19 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 
+await import("./build_docs.mjs"); // regenerate docs/files.json first
+
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const files = ["index.html", "manifest.webmanifest", "models.json"];
+const files = ["index.html", "recover.html", "manifest.webmanifest", "models.json"];
 const walk = (dir) => {
   for (const f of fs.readdirSync(path.join(repo, dir)).sort()) {
     const rel = path.posix.join(dir, f);
     const st = fs.statSync(path.join(repo, rel));
     if (st.isDirectory()) walk(rel);
-    else if (/\.(js|css|svg|png)$/.test(f)) files.push(rel);
+    else if (/\.(js|css|svg|png|md|json)$/.test(f)) files.push(rel);
   }
 };
-for (const d of ["css", "js", "icons", "vendor/web-llm"]) walk(d);
+for (const d of ["css", "js", "icons", "vendor/web-llm", "docs"]) walk(d);
 
 const hash = crypto.createHash("sha256");
 for (const f of files) hash.update(f).update(fs.readFileSync(path.join(repo, f)));

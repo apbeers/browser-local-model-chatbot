@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <title>Local LLM Bench</title>
-    <meta name="description" content="Chat with small language models running fully in your browser on WebGPU, and measure how fast they run on each device." />
+    <meta name="description" content="Chat with language models running fully on your device with WebGPU, measure their speed, and build your own version of the app." />
     <meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)" />
     <meta name="color-scheme" content="light dark" />
@@ -16,93 +16,115 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="stylesheet" href="css/app.css" />
+    <!-- Empty by default; custom UIs put extra styles here. -->
+    <link rel="stylesheet" href="css/custom.css" />
+    <!--
+      This page is the locked boot shell: it can't be changed by custom UIs.
+      It (1) applies the saved theme before anything renders, and (2) runs a
+      startup watchdog: if the UI hasn't called app.ready() within 12 seconds,
+      it offers to open the default UI. If that happens with a custom UI, the
+      next normal launch switches back to the default automatically.
+      Everything visible is rendered by js/ui/main.js into #root.
+    -->
     <script>
-      // Apply saved theme before first paint to avoid a flash.
-      try {
-        var t = localStorage.getItem("theme");
-        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
-      } catch (e) {}
+      (function () {
+        var ls = {};
+        try {
+          ls = window.localStorage;
+          var t = ls.getItem("theme");
+          if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+          var css = ls.getItem("paletteCSS");
+          if (css) {
+            var s = document.createElement("style");
+            s.id = "custom-theme";
+            s.textContent = css;
+            document.head.appendChild(s);
+            document.documentElement.dataset.palette = ls.getItem("palette");
+          }
+        } catch (e) {}
+        var params = new URLSearchParams(location.search);
+        window.__safe = params.has("safe");
+        window.__previewUI = params.get("ui");
+        var scope = new URL("./", location.href).href;
+
+        function useDefaultUI() {
+          if (!("caches" in window)) return Promise.resolve();
+          return caches
+            .open("ui-meta")
+            .then(function (c) {
+              return c.put(scope + "__ui/active", new Response('{"id":"default"}', { headers: { "content-type": "application/json" } }));
+            })
+            .catch(function () {});
+        }
+        window.__useDefaultUI = useDefaultUI;
+
+        // Auto-rollback: the last launch of a custom UI never started.
+        try {
+          if (ls.getItem("uiBootFailed") === "1" && !window.__safe && !window.__previewUI) {
+            ls.removeItem("uiBootFailed");
+            ls.setItem("uiRolledBack", "1");
+            useDefaultUI().then(function () {
+              location.reload();
+            });
+            return;
+          }
+        } catch (e) {}
+
+        var errors = [];
+        window.addEventListener(
+          "error",
+          function (e) {
+            if (!window.__appReady) errors.push((e.message || (e.target && e.target.src) || "error") + "");
+          },
+          true,
+        );
+        window.addEventListener("unhandledrejection", function (e) {
+          if (!window.__appReady) errors.push(String(e.reason && e.reason.message ? e.reason.message : e.reason));
+        });
+        var timer = setTimeout(function () {
+          if (window.__appReady) return;
+          var custom = !window.__safe;
+          try {
+            if (custom && !window.__previewUI) ls.setItem("uiBootFailed", "1");
+          } catch (e) {}
+          var box = document.createElement("div");
+          box.setAttribute("role", "alertdialog");
+          box.style.cssText =
+            "position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.5);font:15px/1.5 system-ui,sans-serif";
+          box.innerHTML =
+            '<div style="max-width:440px;background:#fff;color:#111;border-radius:12px;padding:20px">' +
+            '<h2 style="margin:0 0 8px;font-size:18px">The app didn’t start</h2>' +
+            '<p style="margin:0 0 12px">If you’re using a custom UI, it may have a bug. You can open the default UI; your chats and stats are safe.</p>' +
+            '<pre id="boot-errors" style="white-space:pre-wrap;font-size:12px;background:#f3f3f3;padding:8px;border-radius:8px;max-height:120px;overflow:auto"></pre>' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
+            '<button id="boot-default" style="padding:8px 14px;border-radius:8px;border:0;background:#2a78d6;color:#fff">Open the default UI</button>' +
+            '<a href="recover.html" style="padding:8px 14px">Recovery page</a>' +
+            '<button id="boot-wait" style="padding:8px 14px;border-radius:8px;border:1px solid #ccc;background:#fff">Keep waiting</button></div></div>';
+          document.body.appendChild(box);
+          box.querySelector("#boot-errors").textContent = errors.slice(0, 5).join("\n") || "No error was reported; it may still be loading.";
+          box.querySelector("#boot-default").onclick = function () {
+            try {
+              ls.removeItem("uiBootFailed");
+            } catch (e) {}
+            useDefaultUI().then(function () {
+              location.href = scope;
+            });
+          };
+          box.querySelector("#boot-wait").onclick = function () {
+            box.remove();
+          };
+        }, 12000);
+        window.__bootOk = function () {
+          clearTimeout(timer);
+          try {
+            ls.removeItem("uiBootFailed");
+          } catch (e) {}
+        };
+      })();
     </script>
   </head>
   <body>
-    <div class="app" id="app">
-      <aside class="sidebar" id="sidebar" aria-label="Navigation">
-        <div class="sidebar-head">
-          <a class="brand" href="#/chat">
-            <img src="icons/icon.svg" alt="" width="24" height="24" />
-            <span>Local LLM Bench</span>
-          </a>
-          <button class="icon-btn only-mobile" id="close-sidebar" type="button" aria-label="Close menu">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
-          </button>
-        </div>
-        <button class="btn btn-primary new-chat" id="new-chat" type="button">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-          New chat
-        </button>
-        <nav class="nav">
-          <a href="#/chat" data-nav="chat">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" /></svg>Chat
-          </a>
-          <a href="#/models" data-nav="models">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l8-4 8 4-8 4zM4 12l8 4 8-4M4 17l8 4 8-4" /></svg>Models
-          </a>
-          <a href="#/dashboard" data-nav="dashboard">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>Stats dashboard
-          </a>
-          <a href="#/settings" data-nav="settings">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" /></svg>Settings
-          </a>
-        </nav>
-        <div class="sidebar-section-title">Conversations</div>
-        <ul class="chat-list" id="chat-list" aria-label="Saved conversations"></ul>
-        <div class="sidebar-foot" id="sidebar-foot"></div>
-      </aside>
-      <div class="scrim" id="scrim" hidden></div>
-
-      <main class="main">
-        <header class="topbar">
-          <button class="icon-btn only-mobile" id="open-sidebar" type="button" aria-label="Open menu">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-          </button>
-          <div class="topbar-title" id="topbar-title">Chat</div>
-          <div class="model-bar" id="model-bar">
-            <label class="sr-only" for="model-select">Model</label>
-            <select id="model-select" class="select"></select>
-            <button class="btn" id="load-btn" type="button">Load</button>
-          </div>
-          <button class="icon-btn" id="stats-toggle" type="button" aria-label="Toggle live stats" aria-pressed="true" title="Live stats">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg>
-          </button>
-        </header>
-
-        <section class="view view-chat" id="view-chat" data-view="chat">
-          <div class="banner" id="banner" hidden></div>
-          <div class="loadbar" id="loadbar" hidden>
-            <div class="loadbar-text"><span id="load-text">Loading…</span><span id="load-pct"></span></div>
-            <div class="progress"><div class="progress-fill" id="load-fill"></div></div>
-          </div>
-          <div class="stats-strip" id="stats-strip"></div>
-          <div class="messages" id="messages" aria-live="polite"></div>
-          <form class="composer" id="composer" autocomplete="off">
-            <div class="composer-inner">
-              <label class="sr-only" for="prompt">Message</label>
-              <textarea id="prompt" rows="1" placeholder="Message the model…" enterkeyhint="send"></textarea>
-              <button class="send-btn" id="send-btn" type="submit" aria-label="Send">
-                <svg class="i-send" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
-                <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5" /></svg>
-              </button>
-            </div>
-            <div class="composer-hint" id="composer-hint">Runs entirely on this device. Nothing leaves your browser.</div>
-          </form>
-        </section>
-
-        <section class="view view-page" id="view-models" data-view="models" hidden></section>
-        <section class="view view-page" id="view-dashboard" data-view="dashboard" hidden></section>
-        <section class="view view-page" id="view-settings" data-view="settings" hidden></section>
-      </main>
-    </div>
-    <div class="toast" id="toast" role="status" hidden></div>
-    <script type="module" src="js/app.js"></script>
+    <div id="root"></div>
+    <script type="module" src="js/ui/main.js"></script>
   </body>
 </html>

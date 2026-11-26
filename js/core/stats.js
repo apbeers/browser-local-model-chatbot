@@ -7,7 +7,8 @@
 import { readJSON, writeJSON, list, remove } from "./opfs.js";
 import { getDeviceInfo, getDeviceIdentity, getBattery, memorySnapshot } from "./device.js";
 
-export const APP_VERSION = "1.0.0";
+import { APP_VERSION } from "./version.js";
+export { APP_VERSION };
 export const EXPORT_FORMAT = "browser-llm-bench/v1";
 const DIR = "app/stats/sessions";
 

@@ -1,12 +1,16 @@
 // Models page: quick-select models grouped by size, what's saved in this
 // browser (OPFS), auto-delete settings and deletion.
-import { h, icons, toast, confirmDialog, fmtNum, relTime } from "../ui.js";
-import { cacheInfo, deleteModelFromCache, deleteOrphans, deleteAllModelCache, fmtBytes } from "../models.js";
-import { GROUP_LABELS } from "../catalog.js";
-import { gpuLabel } from "../device.js";
-import { getSettings, setSetting, getUsage, daysLeft, AUTO_DELETE_OPTIONS } from "../retention.js";
+import { app } from "../../core/api.js";
+import { h, icons, toast, confirmDialog, fmtNum, relTime } from "../dom.js";
 
-export function autoDeleteSelect(app, onChange) {
+const { cacheInfo, deleteModelFromCache, deleteOrphans, deleteAllModelCache, fmtBytes, GROUP_LABELS } = app.models;
+const { gpuLabel } = app.device;
+const getSettings = () => app.settings.get();
+const setSetting = (k, v) => app.settings.set(k, v);
+const getUsage = () => app.settings.getUsage();
+const { daysLeft, AUTO_DELETE_OPTIONS } = app.settings;
+
+export function autoDeleteSelect(onChange) {
   const sel = h("select", { class: "select", id: "auto-delete", "aria-label": "Auto-delete downloaded models" });
   getSettings().then((s) => {
     for (const [v, label] of AUTO_DELETE_OPTIONS) sel.append(h("option", { value: String(v), selected: s.autoDeleteDays === v ? true : null }, label));
@@ -14,17 +18,17 @@ export function autoDeleteSelect(app, onChange) {
   sel.onchange = async () => {
     await setSetting("autoDeleteDays", Number(sel.value));
     toast(Number(sel.value) ? `Models unused for ${sel.value} days will be deleted automatically` : "Auto-delete turned off");
-    await app.autoDelete();
+    await app.runAutoDelete();
     if (onChange) onChange();
   };
   return sel;
 }
 
-export async function renderModelsView(root, app) {
+export async function render(root) {
   root.innerHTML = "";
   const page = h("div", { class: "page" });
   root.append(page);
-  const rerender = () => renderModelsView(root, app);
+  const rerender = () => render(root);
   page.append(
     h("h1", null, "Models"),
     h(
@@ -37,7 +41,7 @@ export async function renderModelsView(root, app) {
     page.append(h("div", { class: "card" }, "The model list isn't available."));
     return;
   }
-  await app.refreshScan();
+  await app.refreshModels();
   const scan = app.scan || { byModel: {}, other: { bytes: 0, files: 0, entries: [] } };
   const settings = await getSettings();
   const usage = await getUsage();
@@ -71,7 +75,7 @@ export async function renderModelsView(root, app) {
       "div",
       { class: "row", style: "margin-top:14px" },
       h("label", { for: "auto-delete" }, "Auto-delete downloaded models"),
-      autoDeleteSelect(app, rerender),
+      autoDeleteSelect(rerender),
     ),
   );
   const actions = h("div", { class: "row", style: "margin-top:12px" });
@@ -102,7 +106,6 @@ export async function renderModelsView(root, app) {
           onclick: async () => {
             await deleteOrphans(scan);
             toast("Removed leftover files");
-            app.updateFoot();
             rerender();
           },
         },
@@ -122,9 +125,7 @@ export async function renderModelsView(root, app) {
             if (app.llm.modelId) await app.llm.unload();
             await deleteAllModelCache();
             toast("All saved models deleted");
-            await app.refreshScan();
-            app.renderStats();
-            app.updateFoot();
+            await app.refreshModels();
             rerender();
           },
         },
@@ -181,13 +182,13 @@ export async function renderModelsView(root, app) {
         onclick: async () => {
           const prog = h("div", { class: "progress" }, h("div", { class: "progress-fill" }));
           c.append(prog);
-          app.onLoadProgress = (r) => {
+          const off = app.on("load-progress", (r) => {
             prog.firstChild.style.width = Math.round((r.progress || 0) * 100) + "%";
             loadBtn.textContent = Math.round((r.progress || 0) * 100) + "%";
-          };
+          });
           loadBtn.disabled = true;
           await app.loadModel(m.id);
-          app.onLoadProgress = null;
+          off();
           rerender();
         },
       },
@@ -207,10 +208,8 @@ export async function renderModelsView(root, app) {
               if (app.llm.modelId === m.id) await app.llm.unload();
               await deleteModelFromCache(m, scan, app.catalog);
               toast(`${m.label} deleted`);
-              await app.refreshScan();
-              app.renderStats();
-              app.updateFoot();
-              rerender();
+              await app.refreshModels();
+                  rerender();
             },
           },
           "Delete",
@@ -237,7 +236,7 @@ export async function renderModelsView(root, app) {
   const toggle = h("input", { type: "checkbox", id: "show-all", checked: settings.showAllModels ? true : null });
   toggle.onchange = async () => {
     await setSetting("showAllModels", toggle.checked);
-    await app.refreshScan();
+    await app.refreshModels();
     rerender();
   };
   page.append(

@@ -3,7 +3,7 @@
 // automatically. Every chart has a hover tooltip; identity is never color-only
 // (legends + marker shapes).
 
-import { h, s } from "./ui.js";
+import { h, s } from "./dom.js";
 
 export const SERIES = ["--s1", "--s2", "--s3", "--s4", "--s5", "--s6", "--s7", "--s8"];
 export const colorVar = (i) => `var(${SERIES[i % SERIES.length]})`;

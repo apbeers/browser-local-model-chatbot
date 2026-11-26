@@ -10,7 +10,7 @@ const WINDOW = 16; // tokens per throughput window (for throttling curves)
 
 let webllmPromise = null;
 function webllm() {
-  if (!webllmPromise) webllmPromise = import("../vendor/web-llm/index.js");
+  if (!webllmPromise) webllmPromise = import("../../vendor/web-llm/index.js");
   return webllmPromise;
 }
 
@@ -43,7 +43,8 @@ export class LLM extends EventTarget {
     return this.catalog;
   }
 
-  async load(modelId) {
+  // opts.contextWindow overrides the model's default context size (tokens).
+  async load(modelId, opts = {}) {
     if (!this.catalog) await this.init();
     const model = findModel(this.catalog, modelId);
     if (!model) throw new Error("Unknown model " + modelId);
@@ -93,6 +94,9 @@ export class LLM extends EventTarget {
       }
     }
     const appConfig = buildAppConfig(this.catalog, lib.prebuiltAppConfig);
+    const chatOpts = opts.contextWindow ? { context_window_size: opts.contextWindow } : undefined;
+    const contextWindow = opts.contextWindow || model.contextWindow;
+    session.r.model.contextWindow = contextWindow;
     const onProgress = (report) => {
       session.onProgress(report);
       this.loadProgress = report;
@@ -101,17 +105,20 @@ export class LLM extends EventTarget {
     try {
       if (!this.engine) {
         this.worker = new Worker(new URL("./llm-worker.js", import.meta.url), { type: "module" });
-        this.engine = await lib.CreateWebWorkerMLCEngine(this.worker, modelId, {
-          appConfig,
-          initProgressCallback: onProgress,
-        });
+        this.engine = await lib.CreateWebWorkerMLCEngine(
+          this.worker,
+          modelId,
+          { appConfig, initProgressCallback: onProgress },
+          chatOpts,
+        );
       } else {
         this.engine.setInitProgressCallback(onProgress);
-        await this.engine.reload(modelId);
+        await this.engine.reload(modelId, chatOpts);
       }
       await session.loaded();
       touchModel(modelId).catch(() => {});
       this.modelId = modelId;
+      this.contextWindow = contextWindow;
       this.lastHistoryKey = null;
       this.kvTokens = 0;
       this.setState("ready");
@@ -162,7 +169,9 @@ export class LLM extends EventTarget {
   }
 
   // messages: [{role, content}] (OpenAI format). onToken(fullText) is called as text streams in.
-  async generate(messages, { onToken, conversationId, maxTokens } = {}) {
+  // opts.request: extra WebLLM request fields (temperature, max_tokens, response_format, seed…).
+  // opts.kind: tag stored with the stats record ("chat", "benchmark", "builder-code", …).
+  async generate(messages, { onToken, conversationId, projectId, maxTokens, request, kind, meta } = {}) {
     if (!this.engine || !this.modelId) throw new Error("No model loaded");
     this.setState("generating");
     this.interrupted = false;
@@ -170,7 +179,7 @@ export class LLM extends EventTarget {
     let dropped = 0;
     for (let attempt = 0; ; attempt++) {
       try {
-        const result = await this._generateOnce(msgs, { onToken, conversationId, maxTokens });
+        const result = await this._generateOnce(msgs, { onToken, conversationId, projectId, maxTokens, request, kind, meta });
         result.droppedMessages = dropped;
         this.setState("ready");
         return result;
@@ -197,7 +206,7 @@ export class LLM extends EventTarget {
     }
   }
 
-  async _generateOnce(messages, { onToken, conversationId, maxTokens }) {
+  async _generateOnce(messages, { onToken, conversationId, projectId, maxTokens, request, kind, meta }) {
     const historyKey = JSON.stringify(messages.slice(0, -1));
     const reusedKV = this.lastHistoryKey !== null && historyKey === this.lastHistoryKey;
     const t0 = performance.now();
@@ -209,6 +218,7 @@ export class LLM extends EventTarget {
     };
     if (maxTokens) req.max_tokens = maxTokens;
     if (this.model.sampling) Object.assign(req, this.model.sampling);
+    if (request) Object.assign(req, request);
     const stream = await this.engine.chat.completions.create(req);
     let text = "";
     let tFirst = null;
@@ -255,7 +265,7 @@ export class LLM extends EventTarget {
       completionTokens,
       reusedKV,
       contextTokens: this.kvTokens,
-      contextWindow: this.model.contextWindow,
+      contextWindow: this.contextWindow || this.model.contextWindow,
       ttftMs: tFirst !== null ? Math.round(tFirst - t0) : null,
       e2eMs: Math.round(tEnd - t0),
       decodeMs: Math.round(decodeMs),
@@ -268,8 +278,12 @@ export class LLM extends EventTarget {
       wallDecodeTps: decodeMs > 0 && completionTokens > 1 ? +((completionTokens - 1) / (decodeMs / 1000)).toFixed(2) : null,
       windowTps: windows,
       finishReason: this.interrupted ? "interrupted" : finishReason,
-      maxTokens: maxTokens || null,
+      maxTokens: req.max_tokens || null,
+      kind: kind || "chat",
+      projectId: projectId || null,
+      temperature: req.temperature ?? null,
     };
+    if (meta) Object.assign(gen, meta);
     if (this.session) await this.session.addGeneration(gen);
     touchModel(this.modelId).catch(() => {});
     this.emit("generation", gen);
