@@ -1483,6 +1483,32 @@ const prebuiltAppConfig = {
                 sliding_window_size: -1,
             },
         },
+        // SmolLM3
+        {
+            model: "https://huggingface.co/mlc-ai/SmolLM3-3B-q4f16_1-MLC",
+            model_id: "SmolLM3-3B-q4f16_1-MLC",
+            model_lib: modelLibURLPrefix +
+                modelVersion +
+                "/SmolLM3-3B-q4f16_1_cs1k-webgpu.wasm",
+            vram_required_MB: 2053.32,
+            low_resource_required: false,
+            required_features: ["shader-f16"],
+            overrides: {
+                context_window_size: 4096,
+            },
+        },
+        {
+            model: "https://huggingface.co/mlc-ai/SmolLM3-3B-q4f32_1-MLC",
+            model_id: "SmolLM3-3B-q4f32_1-MLC",
+            model_lib: modelLibURLPrefix +
+                modelVersion +
+                "/SmolLM3-3B-q4f32_1_cs1k-webgpu.wasm",
+            vram_required_MB: 2589.38,
+            low_resource_required: false,
+            overrides: {
+                context_window_size: 4096,
+            },
+        },
         // SmolLM2
         {
             model: "https://huggingface.co/mlc-ai/SmolLM2-1.7B-Instruct-q4f16_1-MLC",
@@ -2503,6 +2529,87 @@ const prebuiltAppConfig = {
             low_resource_required: true,
             overrides: {
                 context_window_size: 4096,
+            },
+        },
+        // MiniCPM5
+        {
+            model: "https://huggingface.co/mlc-ai/MiniCPM5-2B-q4f16_1-MLC",
+            model_id: "MiniCPM5-2B-q4f16_1-MLC",
+            model_lib: modelLibURLPrefix +
+                modelVersion +
+                "/MiniCPM5-2B-q4f16_1_cs1k-webgpu.wasm",
+            vram_required_MB: 1586.33,
+            low_resource_required: false,
+            required_features: ["shader-f16"],
+            overrides: {
+                context_window_size: 4096,
+            },
+        },
+        {
+            model: "https://huggingface.co/mlc-ai/MiniCPM5-2B-q4f32_1-MLC",
+            model_id: "MiniCPM5-2B-q4f32_1-MLC",
+            model_lib: modelLibURLPrefix +
+                modelVersion +
+                "/MiniCPM5-2B-q4f32_1_cs1k-webgpu.wasm",
+            vram_required_MB: 1940.66,
+            low_resource_required: false,
+            overrides: {
+                context_window_size: 4096,
+            },
+        },
+        // LFM2.5
+        {
+            model: "https://huggingface.co/mlc-ai/LFM2.5-1.2B-Instruct-q4f16_1-MLC",
+            model_id: "LFM2.5-1.2B-Instruct-q4f16_1-MLC",
+            model_lib: modelLibURLPrefix +
+                modelVersion +
+                "/LFM2.5-1.2B-Instruct-q4f16_1_cs1k-webgpu.wasm",
+            vram_required_MB: 1001.09,
+            low_resource_required: true,
+            required_features: ["shader-f16"],
+            overrides: {
+                context_window_size: 4096,
+                max_history_size: 1,
+            },
+        },
+        {
+            model: "https://huggingface.co/mlc-ai/LFM2.5-1.2B-Instruct-q4f32_1-MLC",
+            model_id: "LFM2.5-1.2B-Instruct-q4f32_1-MLC",
+            model_lib: modelLibURLPrefix +
+                modelVersion +
+                "/LFM2.5-1.2B-Instruct-q4f32_1_cs1k-webgpu.wasm",
+            vram_required_MB: 1172.18,
+            low_resource_required: true,
+            overrides: {
+                context_window_size: 4096,
+                max_history_size: 1,
+            },
+        },
+        {
+            model: "https://huggingface.co/mlc-ai/LFM2.5-350M-q4f16_1-MLC",
+            model_id: "LFM2.5-350M-q4f16_1-MLC",
+            model_lib: modelLibURLPrefix +
+                modelVersion +
+                "/LFM2.5-350M-q4f16_1_cs1k-webgpu.wasm",
+            vram_required_MB: 532.3,
+            low_resource_required: true,
+            required_features: ["shader-f16"],
+            overrides: {
+                context_window_size: 4096,
+                max_history_size: 1,
+            },
+        },
+        {
+            model: "https://huggingface.co/mlc-ai/LFM2.5-350M-q4f32_1-MLC",
+            model_id: "LFM2.5-350M-q4f32_1-MLC",
+            model_lib: modelLibURLPrefix +
+                modelVersion +
+                "/LFM2.5-350M-q4f32_1_cs1k-webgpu.wasm",
+            vram_required_MB: 631.59,
+            low_resource_required: true,
+            overrides: {
+                context_window_size: 4096,
+                max_history_size: 1,
             },
         },
         // BELOW ARE MODELS OF OLDER VERSIONS OR NOT AS PRACTICAL
@@ -11961,6 +12068,9 @@ class LLMChatPipeline {
         this.topPDevice = this.tvm.detachFromCurrentScope(this.tvm.empty([numProbs], "float32", this.device));
         tvm.endScope();
     }
+    getTokenizer() {
+        return this.tokenizer;
+    }
     dispose() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
         // TODO: Do we need to dispose all PackedFuncs here?
@@ -13920,7 +14030,9 @@ class LLMChatPipeline {
                 if (typeof curPrompt === "string") {
                     const encoded = this.tokenizer.encode(curPrompt);
                     numPromptTokens += encoded.length;
-                    curTokens.push(...encoded);
+                    for (const tokenId of encoded) {
+                        curTokens.push(tokenId);
+                    }
                 }
                 else {
                     for (let j = 0; j < curPrompt.length; j++) {
@@ -13928,7 +14040,9 @@ class LLMChatPipeline {
                         if (typeof curPromptContent === "string") {
                             const encoded = this.tokenizer.encode(curPromptContent);
                             numPromptTokens += encoded.length;
-                            curTokens.push(...encoded);
+                            for (const tokenId of encoded) {
+                                curTokens.push(tokenId);
+                            }
                         }
                         else {
                             // Insert BOI token before image if configured
@@ -15124,6 +15238,9 @@ class EmbeddingPipeline {
             this.curRoundEmbedTotalTime = (embedEnd - embedStart) / 1e3;
             return result;
         });
+    }
+    getTokenizer() {
+        return this.tokenizer;
     }
     dispose() {
         this.params.dispose();
@@ -19053,6 +19170,20 @@ class MLCEngine {
             return selectedPipeline.getMessage();
         });
     }
+    tokenize(text, modelId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.getTokenizer("tokenize", modelId).encode(text);
+        });
+    }
+    decodeTokens(ids, modelId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.getTokenizer("decodeTokens", modelId).decode(ids);
+        });
+    }
+    getTokenizer(requestName, modelId) {
+        const selectedModelId = getModelIdToUse(Array.from(this.loadedModelIdToPipeline.keys()), modelId, requestName);
+        return this.loadedModelIdToPipeline.get(selectedModelId).getTokenizer();
+    }
     runtimeStatsText(modelId) {
         return __awaiter(this, void 0, void 0, function* () {
             log.warn("WARNING: `runtimeStatsText()` will soon be deprecated. " +
@@ -19574,6 +19705,25 @@ class WebWorkerMLCEngineHandler {
                 onComplete === null || onComplete === void 0 ? void 0 : onComplete(null);
                 return;
             }
+            case "decodeTokens": {
+                this.handleTask(msg.uuid, () => __awaiter(this, void 0, void 0, function* () {
+                    const params = msg.content;
+                    const res = yield this.engine.decodeTokens(Int32Array.from(params.inputIds), params.modelId);
+                    onComplete === null || onComplete === void 0 ? void 0 : onComplete(res);
+                    return res;
+                }));
+                return;
+            }
+            case "tokenize": {
+                this.handleTask(msg.uuid, () => __awaiter(this, void 0, void 0, function* () {
+                    const params = msg.content;
+                    // Chrome extension messaging serializes values as JSON.
+                    const res = Array.from(yield this.engine.tokenize(params.text, params.modelId));
+                    onComplete === null || onComplete === void 0 ? void 0 : onComplete(res);
+                    return res;
+                }));
+                return;
+            }
             default: {
                 if (msg.kind && msg.content) {
                     onError === null || onError === void 0 ? void 0 : onError();
@@ -19812,6 +19962,32 @@ class WebWorkerMLCEngine {
                 content: {
                     inputIds: inputIds,
                     isPrefill: isPrefill,
+                    modelId: modelId,
+                },
+            };
+            return yield this.getPromise(msg);
+        });
+    }
+    tokenize(text, modelId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const msg = {
+                kind: "tokenize",
+                uuid: crypto.randomUUID(),
+                content: {
+                    text,
+                    modelId: modelId,
+                },
+            };
+            return Int32Array.from(yield this.getPromise(msg));
+        });
+    }
+    decodeTokens(ids, modelId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const msg = {
+                kind: "decodeTokens",
+                uuid: crypto.randomUUID(),
+                content: {
+                    inputIds: Array.from(ids),
                     modelId: modelId,
                 },
             };

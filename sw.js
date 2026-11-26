@@ -3,7 +3,7 @@
 // stores them in OPFS itself.
 // VERSION and ASSETS are rewritten by tools/build_sw.mjs.
 
-const VERSION = "82cf6f1d4e8e";
+const VERSION = "8b41908c7758";
 const ASSETS = [
   "./",
   "index.html",

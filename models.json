@@ -1,6 +1,6 @@
 {
- "generatedAt": "2026-11-26T11:28:55.062Z",
- "webllm": "0.2.88",
+ "generatedAt": "2026-11-26T11:47:08.826Z",
+ "webllm": "0.2.89",
  "quick": [
   {
    "id": "SmolLM2-135M-Instruct-q0f16-MLC",
@@ -364,6 +364,30 @@
  ],
  "more": [
   {
+   "id": "LFM2.5-350M-q4f16_1-MLC",
+   "hfRepo": "mlc-ai/LFM2.5-350M-q4f16_1-MLC",
+   "lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_87/base/LFM2.5-350M-q4f16_1_cs1k-webgpu.wasm",
+   "quant": "q4f16_1",
+   "requiresF16": true,
+   "vramMB": 532,
+   "contextWindow": 4096,
+   "lowResource": true,
+   "label": "LFM2.5-350M-q4f16_1",
+   "bytes": null
+  },
+  {
+   "id": "LFM2.5-350M-q4f32_1-MLC",
+   "hfRepo": "mlc-ai/LFM2.5-350M-q4f32_1-MLC",
+   "lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_87/base/LFM2.5-350M-q4f32_1_cs1k-webgpu.wasm",
+   "quant": "q4f32_1",
+   "requiresF16": false,
+   "vramMB": 632,
+   "contextWindow": 4096,
+   "lowResource": true,
+   "label": "LFM2.5-350M-q4f32_1",
+   "bytes": null
+  },
+  {
    "id": "TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC",
    "hfRepo": "mlc-ai/TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC",
    "lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_87/base/TinyLlama-1.1B-Chat-v1.0-q4f16_1_cs1k-webgpu.wasm",
@@ -460,6 +484,18 @@
    "bytes": null
   },
   {
+   "id": "LFM2.5-1.2B-Instruct-q4f16_1-MLC",
+   "hfRepo": "mlc-ai/LFM2.5-1.2B-Instruct-q4f16_1-MLC",
+   "lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_87/base/LFM2.5-1.2B-Instruct-q4f16_1_cs1k-webgpu.wasm",
+   "quant": "q4f16_1",
+   "requiresF16": true,
+   "vramMB": 1001,
+   "contextWindow": 4096,
+   "lowResource": true,
+   "label": "LFM2.5-1.2B-Instruct-q4f16_1",
+   "bytes": null
+  },
+  {
    "id": "Qwen2.5-0.5B-Instruct-q4f32_1-MLC",
    "hfRepo": "mlc-ai/Qwen2.5-0.5B-Instruct-q4f32_1-MLC",
    "lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_87/base/Qwen2-0.5B-Instruct-q4f32_1_cs1k-webgpu.wasm",
@@ -484,6 +520,18 @@
    "bytes": null
   },
   {
+   "id": "LFM2.5-1.2B-Instruct-q4f32_1-MLC",
+   "hfRepo": "mlc-ai/LFM2.5-1.2B-Instruct-q4f32_1-MLC",
+   "lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_87/base/LFM2.5-1.2B-Instruct-q4f32_1_cs1k-webgpu.wasm",
+   "quant": "q4f32_1",
+   "requiresF16": false,
+   "vramMB": 1172,
+   "contextWindow": 4096,
+   "lowResource": true,
+   "label": "LFM2.5-1.2B-Instruct-q4f32_1",
+   "bytes": null
+  },
+  {
    "id": "phi-1_5-q4f16_1-MLC",
    "hfRepo": "mlc-ai/phi-1_5-q4f16_1-MLC",
    "lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_87/base/phi-1_5-q4f16_1_cs1k-webgpu.wasm",
@@ -505,6 +553,18 @@
    "contextWindow": 4096,
    "lowResource": false,
    "label": "gemma-2b-it-q4f16_1",
+   "bytes": null
+  },
+  {
+   "id": "MiniCPM5-2B-q4f16_1-MLC",
+   "hfRepo": "mlc-ai/MiniCPM5-2B-q4f16_1-MLC",
+   "lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_87/base/MiniCPM5-2B-q4f16_1_cs1k-webgpu.wasm",
+   "quant": "q4f16_1",
+   "requiresF16": true,
+   "vramMB": 1586,
+   "contextWindow": 4096,
+   "lowResource": false,
+   "label": "MiniCPM5-2B-q4f16_1",
    "bytes": null
   },
   {
@@ -724,6 +784,30 @@
    "bytes": null
   },
   {
+   "id": "MiniCPM5-2B-q4f32_1-MLC",
+   "hfRepo": "mlc-ai/MiniCPM5-2B-q4f32_1-MLC",
+   "lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_87/base/MiniCPM5-2B-q4f32_1_cs1k-webgpu.wasm",
+   "quant": "q4f32_1",
+   "requiresF16": false,
+   "vramMB": 1941,
+   "contextWindow": 4096,
+   "lowResource": false,
+   "label": "MiniCPM5-2B-q4f32_1",
+   "bytes": null
+  },
+  {
+   "id": "SmolLM3-3B-q4f16_1-MLC",
+   "hfRepo": "mlc-ai/SmolLM3-3B-q4f16_1-MLC",
+   "lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_87/base/SmolLM3-3B-q4f16_1_cs1k-webgpu.wasm",
+   "quant": "q4f16_1",
+   "requiresF16": true,
+   "vramMB": 2053,
+   "contextWindow": 4096,
+   "lowResource": false,
+   "label": "SmolLM3-3B-q4f16_1",
+   "bytes": null
+  },
+  {
    "id": "stablelm-2-zephyr-1_6b-q4f16_1-MLC",
    "hfRepo": "mlc-ai/stablelm-2-zephyr-1_6b-q4f16_1-MLC",
    "lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_87/base/stablelm-2-zephyr-1_6b-q4f16_1_cs1k-webgpu.wasm",
@@ -817,6 +901,18 @@
    "contextWindow": 4096,
    "lowResource": true,
    "label": "Llama-3.2-1B-Instruct-q0f16",
+   "bytes": null
+  },
+  {
+   "id": "SmolLM3-3B-q4f32_1-MLC",
+   "hfRepo": "mlc-ai/SmolLM3-3B-q4f32_1-MLC",
+   "lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_87/base/SmolLM3-3B-q4f32_1_cs1k-webgpu.wasm",
+   "quant": "q4f32_1",
+   "requiresF16": false,
+   "vramMB": 2589,
+   "contextWindow": 4096,
+   "lowResource": false,
+   "label": "SmolLM3-3B-q4f32_1",
    "bytes": null
   },
   {
