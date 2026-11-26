@@ -2303,24 +2303,19 @@ dialog:has(.preview-frame) {
     min-height: 100%;
     overflow: visible;
   }
+  /* 100vh is the full screen height in Safari, so the page still fills the
+     screen after its toolbar shrinks and the message box stays at the bottom. */
   html.doc-scroll #root,
-  html.doc-scroll .app {
+  html.doc-scroll .app,
+  html.doc-scroll .main {
     height: auto;
     min-height: 100vh;
-    min-height: 100dvh;
-  }
-  html.doc-scroll .main {
-    min-height: 100vh;
-    min-height: 100dvh;
   }
   html.doc-scroll .topbar {
     position: sticky;
     top: 0;
     z-index: 20;
-    background: color-mix(in srgb, var(--page) 78%, transparent);
-    -webkit-backdrop-filter: saturate(1.6) blur(16px);
-    backdrop-filter: saturate(1.6) blur(16px);
-    border-bottom-color: color-mix(in srgb, var(--border) 60%, transparent);
+    background: var(--page); /* solid: no glass effect */
   }
   html.doc-scroll .view {
     flex: 1 0 auto;

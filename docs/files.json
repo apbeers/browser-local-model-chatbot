@@ -124,7 +124,7 @@
    "path": "css/app.css",
    "summary": "All default styles (large: prefer css/custom.css).",
    "doc": "CSS_CLASSES.md",
-   "lines": 2344
+   "lines": 2339
   }
  ]
 }
