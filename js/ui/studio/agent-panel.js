@@ -66,7 +66,7 @@ export function agentPanel(panel, ws, { initialRequest } = {}) {
             steps.append(el);
           }
           el.className = "ag-step " + e.status;
-          el.replaceChildren(h("span", { class: "ag-icon", "aria-hidden": "true" }, ICON[e.status]), h("span", null, e.label), e.detail ? h("small", null, e.detail) : null);
+          el.replaceChildren(...[h("span", { class: "ag-icon", "aria-hidden": "true" }, ICON[e.status]), h("span", null, e.label), e.detail ? h("small", null, e.detail) : null].filter(Boolean));
           status.textContent = "";
         } else if (e.type === "stream") {
           code.textContent = e.text;
@@ -94,12 +94,24 @@ export function agentPanel(panel, ws, { initialRequest } = {}) {
       card.status("Getting the coding model ready…");
       if (!(await prepareBuilder((s) => card.status(s)))) throw new Error("The coding model isn't available.");
       fillModels();
-      const res = await a.runAgent(text, { chat: history.slice(-4), path: ws.selectedPath, signal: controller.signal, onEvent: (e) => card.event(e), check: (html) => ws.preview.check(html) });
+      const run = () => a.runAgent(text, { chat: history.slice(-4), path: ws.selectedPath, signal: controller.signal, onEvent: (e) => card.event(e), check: (html) => ws.preview.check(html) });
+      let res;
+      try {
+        res = await run();
+      } catch (err) {
+        if (!err.gpuLost || controller.signal.aborted) throw err;
+        // The GPU dropped the model (usually memory on phones): reload it and try once more.
+        card.status("The GPU ran out of memory and dropped the model. Reloading it and trying again…");
+        if (!(await prepareBuilder((s) => card.status(s)))) throw err;
+        res = await run();
+      }
       const errs = res.errors || [];
       summary = !res.html ? "I couldn't produce a working version. Try rephrasing or a smaller change." : errs.length ? `Draft ready, but ${errs.length} error(s) remain. Check the Console, ask me to fix them, or edit the file.` : "Draft ready. Look at the Preview, then Keep or Discard it.";
       if (res.plan) summary = `${res.plan.emoji || ""} ${res.plan.name}: ${res.plan.features.join("; ")}. ` + summary;
     } catch (err) {
-      summary = "Stopped: " + (err.message || err);
+      summary = err.gpuLost
+        ? "Stopped: the GPU ran out of memory and dropped the model twice. Close other tabs and apps and try again, or pick a smaller coding model above."
+        : "Stopped: " + (err.message || err);
     } finally {
       controller = null;
       sendBtn.textContent = "Send";

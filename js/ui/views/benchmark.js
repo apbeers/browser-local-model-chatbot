@@ -49,9 +49,11 @@ async function history(root, modelId) {
   const sessions = (await app.stats.loadAllSessions()).filter((s) => s.deviceId === me && s.model.id === modelId);
   const runs = sessions.flatMap((s) => s.generations.filter((g) => g.kind === "benchmark" && g.bench && g.bench.suite === app.benchmark.SUITE));
   root.replaceChildren(
+    ...[
     h("h2", null, "Earlier runs of this model on this device"),
     runs.length ? resultsTable(byPrompt(runs)) : h("p", { class: "muted" }, "None yet."),
     runs.length ? h("p", { class: "note" }, `${runs.length} results since ${fmtDate(Math.min(...runs.map((g) => g.at)))}. All runs from every device are in the Stats dashboard (Type: Benchmarks).`) : null,
+    ].filter(Boolean), // replaceChildren would show a null as the text "null"
   );
 }
 

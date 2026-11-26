@@ -94,9 +94,11 @@ async function renderProjectBar() {
   bar.hidden = !p;
   if (!p) return;
   bar.replaceChildren(
-    h("span", null, "Project: ", h("strong", null, p.name)),
-    p.instructions ? h("span", { class: "muted" }, " · instructions on") : null,
-    h("button", { class: "md-copy", type: "button", onclick: () => editProject(p).then(renderProjectBar) }, "Edit"),
+    ...[
+      h("span", null, "Project: ", h("strong", null, p.name)),
+      p.instructions ? h("span", { class: "muted" }, " · instructions on") : null,
+      h("button", { class: "md-copy", type: "button", onclick: () => editProject(p).then(renderProjectBar) }, "Edit"),
+    ].filter(Boolean), // replaceChildren would show a null as the text "null"
   );
 }
 

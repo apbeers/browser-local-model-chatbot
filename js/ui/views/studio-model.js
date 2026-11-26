@@ -13,7 +13,7 @@ export async function prepareBuilder(onStatus = () => {}) {
   if (app.llm.modelId === id && app.llm.contextWindow === ctx) return true;
   const off = app.on("load-progress", (r) => onStatus(`Loading the coding model… ${Math.round((r.progress || 0) * 100)}%`));
   try {
-    const ok = await app.loadModel(id, { contextWindow: ctx });
+    const ok = await app.loadModel(id, app.builder.builderLoadOptions());
     if (!ok) onStatus("The coding model didn't load. Check the message at the top of the Chat page.");
     return ok;
   } finally {

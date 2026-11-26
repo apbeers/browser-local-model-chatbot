@@ -94,7 +94,9 @@ export class LLM extends EventTarget {
       }
     }
     const appConfig = buildAppConfig(this.catalog, lib.prebuiltAppConfig);
-    const chatOpts = opts.contextWindow ? { context_window_size: opts.contextWindow } : undefined;
+    let chatOpts;
+    if (opts.contextWindow) chatOpts = { context_window_size: opts.contextWindow };
+    if (opts.prefillChunk) chatOpts = { ...(chatOpts || {}), prefill_chunk_size: opts.prefillChunk };
     const contextWindow = opts.contextWindow || model.contextWindow;
     session.r.model.contextWindow = contextWindow;
     const onProgress = (report) => {
@@ -194,7 +196,10 @@ export class LLM extends EventTarget {
           continue;
         }
         if (this.session) await this.session.addError("generate", err);
-        if (/device (was )?lost|GPUDevice|Instance (reference|dropped)|external Instance/i.test(msg)) {
+        // When the GPU drops the model (often out of memory on phones), WebLLM tears it
+        // down and the running request fails with "...has already been disposed".
+        if (/device (was )?lost|GPUDevice|Instance (reference|dropped)|external Instance|already been disposed/i.test(msg)) {
+          err.gpuLost = true;
           this.destroyWorker();
           this.modelId = null;
           this.setState("error");

@@ -17,10 +17,19 @@ const DOCS = new URL("../../docs/", import.meta.url).href;
 const isMobile = () => /Android|iPhone|iPad/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
 const f32 = (id, gpu) => (gpu && gpu.available && !gpu.shaderF16 ? id.replace("q4f16_1", "q4f32_1") : id);
 
-// 16k tokens of context on desktops / devices reporting 8 GB+, 8k otherwise.
+// Context for the coding model. Phones get 4k: iOS Safari gives WebGPU little
+// memory and a bigger KV cache can make the GPU drop the model mid-answer.
+// Computers: 16k with 8 GB+ memory, otherwise 8k.
 export function builderContextWindow() {
-  const mem = navigator.deviceMemory || (isMobile() ? 4 : 8);
-  return !isMobile() && mem >= 8 ? 16384 : 8192;
+  if (isMobile()) return 4096;
+  const mem = navigator.deviceMemory || 8;
+  return mem >= 8 ? 16384 : 8192;
+}
+
+// Extra load options for the coding model: smaller prefill chunks on phones
+// need less GPU memory at once when a long prompt is processed.
+export function builderLoadOptions() {
+  return isMobile() ? { contextWindow: builderContextWindow(), prefillChunk: 512 } : { contextWindow: builderContextWindow() };
 }
 
 // Automatic choice: 1.5B on phones and tablets, 7B on desktops with a
@@ -77,7 +86,7 @@ export async function fileIndex() {
 export async function ensureBuilder(app) {
   const id = pickBuilderModel(app.gpu, (await app.settings.get()).coderModel);
   const ctx = builderContextWindow();
-  if (app.llm.modelId !== id || app.llm.contextWindow !== ctx) await app.llm.load(id, { contextWindow: ctx });
+  if (app.llm.modelId !== id || app.llm.contextWindow !== ctx) await app.llm.load(id, builderLoadOptions());
   return { id, ctx, model: findModel(app.catalog, id) };
 }
 

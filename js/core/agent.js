@@ -141,7 +141,8 @@ export async function runAppAgent(opts) {
 
   // ---- shared context ----
   const patterns = await pickPatterns(request + " " + plan.features.join(" "));
-  const docs = [await loadDoc("APP_RULES.md"), await loadDoc("APPKIT.md")];
+  // Small contexts (phones: 4k) get the short appkit reference so it still fits next to the file.
+  const docs = [await loadDoc("APP_RULES.md"), await loadDoc(ctx <= 4096 ? "APPKIT_SHORT.md" : "APPKIT.md")];
   for (const p of patterns) docs.push((await loadDoc("patterns/" + p.file)).replace(/^keywords:.*\n/, ""));
   const fit = (parts, budget) => {
     const out = [];
