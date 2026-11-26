@@ -185,8 +185,28 @@ export async function activateTheme(id) {
 }
 
 export async function restoreTheme() {
+  syncThemeColor();
   const { themeId } = await getSettings();
   if (themeId && themeId !== "default") await activateTheme(themeId);
+}
+
+// Keeps the browser's bar color (<meta name="theme-color">) equal to the app's
+// actual background, including custom themes and a forced light/dark mode.
+export function syncThemeColor() {
+  const page = getComputedStyle(document.documentElement).getPropertyValue("--page").trim();
+  if (!page) return;
+  const metas = document.querySelectorAll('meta[name="theme-color"]');
+  metas.forEach((m, i) => (i ? m.remove() : (m.removeAttribute("media"), m.setAttribute("content", page))));
+  if (!metas.length) {
+    const m = document.createElement("meta");
+    m.name = "theme-color";
+    m.content = page;
+    document.head.append(m);
+  }
+}
+if (typeof window !== "undefined") {
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => syncThemeColor());
+  addEventListener("app-theme-changed", () => setTimeout(syncThemeColor));
 }
 
 // Light / dark / system mode (separate from the palette).

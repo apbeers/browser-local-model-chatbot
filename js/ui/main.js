@@ -32,7 +32,11 @@ async function route() {
   $("statsToggle").hidden = v !== "chat";
   $("title").textContent = TITLES[v];
   // Studio workspaces and running apps use the full width on desktop.
-  $("app").classList.toggle("focus-mode", (v === "studio" && !!id) || v === "run");
+  const focus = (v === "studio" && !!id) || v === "run";
+  $("app").classList.toggle("focus-mode", focus);
+  // Phones: normal pages scroll the whole document; Studio workspaces and apps stay full screen.
+  document.documentElement.classList.toggle("doc-scroll", !focus);
+  if (v !== "chat") window.scrollTo(0, 0);
   setSidebar(false);
   app.emit("usage", { event: "page", page: v, mobile: matchMedia("(max-width: 820px)").matches, wide: innerWidth >= 1800 });
   if (v === "chat") {

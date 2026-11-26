@@ -2290,3 +2290,54 @@ dialog:has(.preview-frame) {
 .hide-msg-stats .msg-meta > span {
   display: none;
 }
+
+/* ---------- Phones: the document scrolls ----------
+   Safari's translucent top/bottom bars blend whatever page content is behind
+   them. With a fixed full-height layout there is nothing behind them and they
+   turn a flat gray, so on phones normal pages scroll the whole document: the
+   top bar is sticky and translucent, the message box sticks to the bottom. */
+@media (max-width: 820px) {
+  html.doc-scroll,
+  html.doc-scroll body {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+  html.doc-scroll #root,
+  html.doc-scroll .app {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  html.doc-scroll .main {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  html.doc-scroll .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--page) 78%, transparent);
+    -webkit-backdrop-filter: saturate(1.6) blur(16px);
+    backdrop-filter: saturate(1.6) blur(16px);
+    border-bottom-color: color-mix(in srgb, var(--border) 60%, transparent);
+  }
+  html.doc-scroll .view {
+    flex: 1 0 auto;
+    min-height: 0;
+  }
+  html.doc-scroll .view-page {
+    overflow: visible;
+  }
+  html.doc-scroll .messages {
+    flex: 1 0 auto;
+    overflow: visible;
+  }
+  html.doc-scroll .composer {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    padding-top: 14px;
+    background: linear-gradient(to bottom, transparent, var(--page) 14px);
+  }
+}

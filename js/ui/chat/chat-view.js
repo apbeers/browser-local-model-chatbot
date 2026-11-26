@@ -117,12 +117,19 @@ function renderMessages() {
   }
   const last = chat.messages.length - 1;
   box.replaceChildren(...chat.messages.map((m, i) => messageEl(m, { onRegenerate: i === last && m.role === "assistant" ? regenerate : null })));
-  box.scrollTop = box.scrollHeight;
+  scrollToBottom();
 }
 
+// On phones the whole page scrolls (so Safari's glass bars show the app
+// behind them); on bigger screens the message list scrolls by itself.
+const scroller = () => (getComputedStyle($("messages")).overflowY === "visible" ? document.scrollingElement : $("messages"));
+const scrollToBottom = () => {
+  const s = scroller();
+  s.scrollTop = s.scrollHeight;
+};
 const nearBottom = () => {
-  const b = $("messages");
-  return b.scrollHeight - b.scrollTop - b.clientHeight < 80;
+  const s = scroller();
+  return s.scrollHeight - s.scrollTop - s.clientHeight < 120;
 };
 
 async function ensureModel() {
@@ -147,7 +154,7 @@ export async function send(text) {
   chat.messages.push({ role: "user", content: text, at: Date.now() });
   if ($("messages").querySelector(".empty-state")) $("messages").replaceChildren();
   $("messages").append(messageEl(chat.messages[chat.messages.length - 1]));
-  $("messages").scrollTop = $("messages").scrollHeight;
+  scrollToBottom();
   await app.chats.saveChat(chat);
   if (location.hash !== `#/chat/${chat.id}`) history.replaceState(null, "", `#/chat/${chat.id}`);
   $("title").textContent = chat.title;
@@ -172,7 +179,7 @@ async function runAssistant() {
   const mode = await toolsModeFor(chat);
   const stream = streamingEl(app.llm.model.label);
   $("messages").append(stream.el);
-  $("messages").scrollTop = $("messages").scrollHeight;
+  scrollToBottom();
 
   state.live = { tokens: 0, tFirst: null, tps: null };
   let latest = "";
@@ -183,7 +190,7 @@ async function runAssistant() {
     const lv = state.live;
     stream.update(latest, lv && lv.tps ? `${fmtNum(lv.tps)} tok/s · ${lv.tokens} tok` : "Prefilling…");
     renderStats();
-    if (stick) $("messages").scrollTop = $("messages").scrollHeight;
+    if (stick) scrollToBottom();
   };
   const onToken = (text) => {
     latest = text;

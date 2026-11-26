@@ -34,7 +34,7 @@
    "path": "js/ui/chat/chat-view.js",
    "summary": "The chat page: opens chats, sends messages, streams replies.",
    "doc": "components/chat-view.md",
-   "lines": 256
+   "lines": 263
   },
   {
    "path": "js/ui/chat/model-picker.js",
@@ -58,7 +58,7 @@
    "path": "js/ui/main.js",
    "summary": "Entry point: starts the app and switches pages.",
    "doc": "components/main.md",
-   "lines": 124
+   "lines": 128
   },
   {
    "path": "js/ui/dom.js",
@@ -124,7 +124,7 @@
    "path": "css/app.css",
    "summary": "All default styles (large: prefer css/custom.css).",
    "doc": "CSS_CLASSES.md",
-   "lines": 2293
+   "lines": 2344
   }
  ]
 }
