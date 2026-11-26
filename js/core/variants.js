@@ -172,3 +172,23 @@ export async function resync() {
     for (const p of await listFiles(v.id)) await cachePut(v.id, p, await readFile(v.id, p));
   }
 }
+
+// ---------- drafts (preview a change before saving it) ----------
+// A draft is a Cache-only copy of the UI ("ui-<id>-draft") plus the changed
+// files. Preview it with ?ui=<id>-draft. Nothing is written to OPFS.
+export const draftId = (id) => id + "-draft";
+
+export async function stageDraft(id, files) {
+  await caches.delete("ui-" + draftId(id));
+  const src = await caches.open("ui-" + id);
+  const dst = await caches.open("ui-" + draftId(id));
+  for (const req of await src.keys()) await dst.put(req, await src.match(req));
+  for (const [path, text] of Object.entries(files)) {
+    check(path);
+    await cachePut(draftId(id), path, text);
+  }
+}
+
+export async function clearDraft(id) {
+  await caches.delete("ui-" + draftId(id));
+}

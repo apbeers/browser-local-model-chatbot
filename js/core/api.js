@@ -17,6 +17,9 @@ import * as themes from "./themes.js";
 import * as variants from "./variants.js";
 import * as builder from "./builder.js";
 import * as benchmark from "./benchmark.js";
+import * as appsMod from "./apps.js";
+import * as runtime from "./app-runtime.js";
+import * as agent from "./agent.js";
 import * as install from "./install.js";
 import * as device from "./device.js";
 import { findModel, GROUP_LABELS } from "./catalog.js";
@@ -46,6 +49,18 @@ export const app = {
   variants,
   builder,
   benchmark,
+  /** Studio apps: storage (listApps, createApp, readApp, saveApp, drafts, history) plus
+   *  mount(container, {appId, html, onLog, onNotify, onLoad}) to run one sandboxed, and
+   *  check(html) for a syntax check. */
+  apps: {
+    ...appsMod,
+    check: runtime.checkAppHtml,
+    compose: runtime.composeDocument,
+    mount(container, opts) {
+      return runtime.mountApp(container, { ...opts, llm, theme: themes.appTheme, ensureModel: () => app.ensureChatModel(), tools: app.appTools || null });
+    },
+  },
+  agent,
   install,
   device,
   opfsAvailable,
@@ -130,6 +145,21 @@ export const app = {
     } catch {
       /* ignore */
     }
+  },
+
+  /** Makes sure some model is loaded (the one picked in the chat dropdown). */
+  async ensureChatModel() {
+    if (llm.modelId) return true;
+    if (!app.gpu || !app.gpu.available || !app.catalog) return false;
+    let id = null;
+    try {
+      id = localStorage.getItem("model");
+    } catch {
+      /* ignore */
+    }
+    const m = (id && findModel(app.catalog, id)) || app.catalog.quick.find((x) => app.isSaved(x) && app.modelUsable(x)) || app.catalog.quick.find((x) => app.modelUsable(x));
+    if (!m) return false;
+    return app.loadModel ? app.loadModel(m.id) : (await llm.load(m.id), true);
   },
 
   /** Call once the UI has rendered. Stops the startup watchdog in index.html. */

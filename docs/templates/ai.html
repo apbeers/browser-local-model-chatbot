@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>Recipe helper</title>
+<style>
+  #answer { white-space: pre-wrap; min-height: 4em; }
+</style>
+</head>
+<body>
+<main class="ak-app ak-stack">
+  <header class="ak-header"><h1>Recipe helper</h1><span class="ak-badge" id="status">AI on this device</span></header>
+  <form class="ak-card ak-stack" id="form">
+    <label class="ak-label">What ingredients do you have?
+      <textarea class="ak-textarea" id="input" placeholder="eggs, spinach, cheese"></textarea>
+    </label>
+    <div class="ak-row"><button class="ak-btn primary" id="go">Suggest a recipe</button></div>
+  </form>
+  <section class="ak-card"><div id="answer" class="ak-muted">The suggestion appears here.</div></section>
+</main>
+<script>
+  const answer = document.getElementById("answer");
+  const go = document.getElementById("go");
+  document.getElementById("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = document.getElementById("input").value.trim();
+    if (!text) return;
+    go.disabled = true;
+    answer.textContent = "Thinking…";
+    try {
+      const reply = await appkit.ai.chat(
+        [
+          { role: "system", content: "You suggest one simple recipe. Use short steps." },
+          { role: "user", content: "Ingredients: " + text },
+        ],
+        { onToken: (soFar) => { answer.textContent = soFar; } }
+      );
+      answer.textContent = reply;
+      await appkit.storage.set("last", { text, reply });
+    } catch (err) {
+      answer.textContent = "Error: " + err.message;
+    } finally {
+      go.disabled = false;
+    }
+  });
+  appkit.storage.get("last").then((last) => {
+    if (last) { document.getElementById("input").value = last.text; answer.textContent = last.reply; }
+  });
+</script>
+</body>
+</html>

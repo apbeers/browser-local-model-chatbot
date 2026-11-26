@@ -1,0 +1,249 @@
+/* appkit.css: base styles injected into every Studio app, before the app's
+   own styles. Colors are theme tokens (light/dark switch automatically).
+   Layout helpers are responsive: phone, desktop and ultrawide. See docs/APPKIT.md. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  color-scheme: light dark;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+a {
+  color: var(--accent);
+}
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+  margin: 0 0 0.5em;
+}
+h1 {
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+}
+img,
+canvas,
+svg,
+video {
+  max-width: 100%;
+}
+
+/* Page container: centered, padded, wider on big screens. */
+.ak-app {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.ak-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.ak-header h1 {
+  margin: 0;
+  flex: 1;
+}
+
+/* Layout */
+.ak-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ak-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ak-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 12px;
+}
+.ak-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.ak-spacer {
+  flex: 1;
+}
+
+/* Surfaces */
+.ak-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.ak-muted {
+  color: var(--ink-2);
+  font-size: 0.9em;
+}
+.ak-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--surface-3);
+  color: var(--ink-2);
+}
+.ak-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 24px;
+}
+.ak-stat {
+  display: flex;
+  flex-direction: column;
+}
+.ak-stat b {
+  font-size: 1.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.ak-stat span {
+  color: var(--ink-2);
+  font-size: 0.85rem;
+}
+
+/* Controls */
+.ak-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.ak-btn:hover {
+  background: var(--surface-3);
+}
+.ak-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ak-btn.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: transparent;
+}
+.ak-btn.danger {
+  color: var(--critical-ink, #c33);
+}
+.ak-btn.ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.ak-input,
+.ak-select,
+.ak-textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* stops phones zooming in */
+}
+.ak-textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+.ak-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Lists */
+.ak-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.ak-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+.ak-list li:first-child {
+  border-top: 0;
+}
+.ak-list li > :first-child {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Tables scroll sideways on small screens */
+.ak-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ak-table th,
+.ak-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ak-scroll {
+  overflow-x: auto;
+}
+
+/* Desktop: two-column split */
+@media (min-width: 900px) {
+  .ak-app {
+    padding: 24px;
+  }
+  .ak-split {
+    grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr);
+  }
+}
+/* Ultrawide: use more of the screen */
+@media (min-width: 1800px) {
+  .ak-app {
+    max-width: 1600px;
+  }
+  .ak-split {
+    grid-template-columns: minmax(320px, 1fr) minmax(0, 3fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

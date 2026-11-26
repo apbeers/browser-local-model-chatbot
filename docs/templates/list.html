@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>Checklist</title>
+<style>
+  .done span { text-decoration: line-through; color: var(--muted); }
+  form { display: flex; gap: 8px; }
+  form .ak-input { flex: 1; }
+</style>
+</head>
+<body>
+<main class="ak-app ak-stack">
+  <header class="ak-header">
+    <h1>Checklist</h1>
+    <span class="ak-badge" id="count">0 left</span>
+  </header>
+  <form id="add-form">
+    <input class="ak-input" id="new-item" placeholder="Add an item" autocomplete="off" required>
+    <button class="ak-btn primary">Add</button>
+  </form>
+  <ul class="ak-list" id="list"></ul>
+  <p class="ak-empty" id="empty">Nothing here yet.</p>
+</main>
+<script>
+  // Each item: { id, text, done, createdAt }
+  let items = [];
+  const listEl = document.getElementById("list");
+
+  async function load() {
+    items = await appkit.storage.get("items", []);
+    render();
+  }
+  async function save() {
+    await appkit.storage.set("items", items);
+    render();
+  }
+  function render() {
+    listEl.replaceChildren(...items.map((item) => {
+      const li = document.createElement("li");
+      li.className = item.done ? "done" : "";
+      const check = document.createElement("input");
+      check.type = "checkbox";
+      check.checked = item.done;
+      check.addEventListener("change", () => { item.done = check.checked; save(); });
+      const text = document.createElement("span");
+      text.textContent = item.text;
+      const del = document.createElement("button");
+      del.className = "ak-btn ghost";
+      del.textContent = "Delete";
+      del.addEventListener("click", () => { items = items.filter((x) => x.id !== item.id); save(); });
+      li.append(text, check, del);
+      return li;
+    }));
+    document.getElementById("empty").hidden = items.length > 0;
+    listEl.hidden = items.length === 0;
+    document.getElementById("count").textContent = `${items.filter((x) => !x.done).length} left`;
+  }
+  document.getElementById("add-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const input = document.getElementById("new-item");
+    items.push({ id: Date.now(), text: input.value.trim(), done: false, createdAt: Date.now() });
+    input.value = "";
+    save();
+  });
+  load();
+</script>
+</body>
+</html>

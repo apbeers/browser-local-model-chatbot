@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>My app</title>
+<style>
+  /* App styles. Colors: var(--page), var(--surface), var(--ink), var(--ink-2), var(--accent), var(--border). */
+</style>
+</head>
+<body>
+<main class="ak-app">
+  <header class="ak-header">
+    <h1>My app</h1>
+  </header>
+  <section class="ak-card ak-stack">
+    <p>Start here.</p>
+    <div class="ak-row">
+      <button class="ak-btn primary" id="hello">Say hello</button>
+      <span id="out" class="ak-muted"></span>
+    </div>
+  </section>
+</main>
+<script>
+  const out = document.getElementById("out");
+  document.getElementById("hello").addEventListener("click", async () => {
+    const count = (await appkit.storage.get("clicks", 0)) + 1;
+    await appkit.storage.set("clicks", count);
+    out.textContent = `Hello! Clicked ${count} time(s).`;
+  });
+</script>
+</body>
+</html>

@@ -4,19 +4,50 @@
 // current file, and the user's request. Nothing else.
 import { findModel } from "./catalog.js";
 
-export const BUILDER_MODEL = "Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC";
-export const BUILDER_MODEL_F32 = "Qwen2.5-Coder-1.5B-Instruct-q4f32_1-MLC";
+// Coder models offered for Studio, smallest first. f32 versions are used on GPUs without shader-f16.
+export const CODER_MODELS = [
+  "Qwen2.5-Coder-0.5B-Instruct-q4f16_1-MLC",
+  "Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC",
+  "Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC",
+  "Qwen2.5-Coder-7B-Instruct-q4f16_1-MLC",
+];
+export const BUILDER_MODEL = CODER_MODELS[1];
 const DOCS = new URL("../../docs/", import.meta.url).href;
+
+const isMobile = () => /Android|iPhone|iPad/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
+const f32 = (id, gpu) => (gpu && gpu.available && !gpu.shaderF16 ? id.replace("q4f16_1", "q4f32_1") : id);
 
 // 16k tokens of context on desktops / devices reporting 8 GB+, 8k otherwise.
 export function builderContextWindow() {
-  const mobile = /Android|iPhone|iPad/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
-  const mem = navigator.deviceMemory || (mobile ? 4 : 8);
-  return !mobile && mem >= 8 ? 16384 : 8192;
+  const mem = navigator.deviceMemory || (isMobile() ? 4 : 8);
+  return !isMobile() && mem >= 8 ? 16384 : 8192;
 }
 
-export function pickBuilderModel(gpu) {
-  return gpu && gpu.available && !gpu.shaderF16 ? BUILDER_MODEL_F32 : BUILDER_MODEL;
+// Automatic choice: 1.5B on phones and tablets, 7B on desktops with a
+// discrete NVIDIA/AMD GPU, 3B on other computers.
+export function autoBuilderModel(gpu) {
+  if (isMobile()) return f32(CODER_MODELS[1], gpu);
+  const vendor = ((gpu && gpu.vendor) || "").toLowerCase();
+  const discrete = /nvidia|amd/.test(vendor) && !/integrated/.test(((gpu && gpu.description) || "").toLowerCase());
+  return f32(discrete ? CODER_MODELS[3] : CODER_MODELS[2], gpu);
+}
+
+// setting: the "coderModel" setting ("auto" or a model id).
+export function pickBuilderModel(gpu, setting = "auto") {
+  return setting && setting !== "auto" ? setting : autoBuilderModel(gpu);
+}
+
+// Options for the Studio model menu: [{id, label, note}].
+export function coderOptions(catalog, gpu) {
+  const auto = autoBuilderModel(gpu);
+  return CODER_MODELS.map((base) => {
+    const id = f32(base, gpu);
+    const m = catalog && catalog.all.find((x) => x.id === id);
+    const size = (m && m.bytes) || (m && m.vramMB * 1048576 * 0.6);
+    const big = /7B/.test(id) ? 3 : /3B/.test(id) ? 2 : /1\.5B/.test(id) ? 1 : 0;
+    const note = id === auto ? "recommended for this device" : big > (isMobile() ? 1 : 2) ? "slow here, may run out of memory" : big < 1 ? "fastest, weakest" : "";
+    return { id, label: (m && m.label) || id, bytes: size || null, vramMB: m ? m.vramMB : null, note };
+  });
 }
 
 export const estimateTokens = (s) => Math.ceil((s || "").length / 3.3);
@@ -44,7 +75,7 @@ export async function fileIndex() {
 
 // Make sure the builder model is loaded with a large enough context window.
 export async function ensureBuilder(app) {
-  const id = pickBuilderModel(app.gpu);
+  const id = pickBuilderModel(app.gpu, (await app.settings.get()).coderModel);
   const ctx = builderContextWindow();
   if (app.llm.modelId !== id || app.llm.contextWindow !== ctx) await app.llm.load(id, { contextWindow: ctx });
   return { id, ctx, model: findModel(app.catalog, id) };

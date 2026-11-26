@@ -14,7 +14,7 @@ export const AUTO_DELETE_OPTIONS = [
 ];
 
 // autoDeleteDays: models; chatAutoDeleteDays: chats (0 = never). themeId: active color theme.
-const DEFAULTS = { autoDeleteDays: 0, chatAutoDeleteDays: 0, showAllModels: false, themeId: "default" };
+const DEFAULTS = { autoDeleteDays: 0, chatAutoDeleteDays: 0, showAllModels: false, themeId: "default", coderModel: "auto" };
 let settingsCache = null;
 
 export async function getSettings() {

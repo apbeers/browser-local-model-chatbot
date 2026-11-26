@@ -10,7 +10,7 @@
    "path": "js/ui/layout.js",
    "summary": "Builds the page skeleton: sidebar, top bar, chat area, page sections.",
    "doc": "components/layout.md",
-   "lines": 82
+   "lines": 83
   },
   {
    "path": "js/ui/chat/message.js",
@@ -58,7 +58,7 @@
    "path": "js/ui/main.js",
    "summary": "Entry point: starts the app and switches pages.",
    "doc": "components/main.md",
-   "lines": 118
+   "lines": 121
   },
   {
    "path": "js/ui/dom.js",
@@ -124,7 +124,7 @@
    "path": "css/app.css",
    "summary": "All default styles (large: prefer css/custom.css).",
    "doc": "CSS_CLASSES.md",
-   "lines": 1631
+   "lines": 2111
   }
  ]
 }

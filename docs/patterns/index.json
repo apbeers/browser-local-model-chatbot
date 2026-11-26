@@ -1,0 +1,98 @@
+{
+ "patterns": [
+  {
+   "file": "ai-stream.md",
+   "keywords": [
+    "ai",
+    "ask",
+    "generate",
+    "write",
+    "summarize",
+    "translate",
+    "chat",
+    "assistant",
+    "stream",
+    "model"
+   ]
+  },
+  {
+   "file": "canvas-game.md",
+   "keywords": [
+    "game",
+    "canvas",
+    "animation",
+    "draw",
+    "loop",
+    "score",
+    "play",
+    "physics"
+   ]
+  },
+  {
+   "file": "chart.md",
+   "keywords": [
+    "chart",
+    "graph",
+    "bars",
+    "stats",
+    "dashboard",
+    "history",
+    "plot",
+    "visualize"
+   ]
+  },
+  {
+   "file": "form.md",
+   "keywords": [
+    "form",
+    "input",
+    "calculate",
+    "calculator",
+    "number",
+    "convert",
+    "select",
+    "live"
+   ]
+  },
+  {
+   "file": "list-storage.md",
+   "keywords": [
+    "list",
+    "todo",
+    "items",
+    "save",
+    "add",
+    "delete",
+    "storage",
+    "crud"
+   ]
+  },
+  {
+   "file": "table.md",
+   "keywords": [
+    "table",
+    "rows",
+    "columns",
+    "data",
+    "csv",
+    "export",
+    "sort",
+    "spreadsheet",
+    "records"
+   ]
+  },
+  {
+   "file": "timer.md",
+   "keywords": [
+    "timer",
+    "countdown",
+    "stopwatch",
+    "pomodoro",
+    "clock",
+    "interval",
+    "alarm",
+    "time"
+   ]
+  }
+ ]
+}

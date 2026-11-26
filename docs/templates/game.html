@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>Catch game</title>
+<style>
+  canvas { display: block; width: 100%; aspect-ratio: 4 / 3; max-height: 70vh; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; touch-action: none; }
+</style>
+</head>
+<body>
+<main class="ak-app ak-stack">
+  <header class="ak-header">
+    <h1>Catch</h1>
+    <span class="ak-badge">Score <b id="score">0</b></span>
+    <span class="ak-badge">Best <b id="best">0</b></span>
+    <button class="ak-btn primary" id="start">Start</button>
+  </header>
+  <canvas id="game" width="800" height="600"></canvas>
+  <p class="ak-muted">Move with the mouse, a finger, or the arrow keys. Catch the dots.</p>
+</main>
+<script>
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  let paddle = 400, dots = [], score = 0, best = 0, running = false, last = 0;
+
+  function reset() { dots = []; score = 0; running = true; last = performance.now(); requestAnimationFrame(loop); }
+  function loop(now) {
+    if (!running) return;
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (Math.random() < dt * 1.5) dots.push({ x: 20 + Math.random() * 760, y: 0, v: 150 + score * 8 });
+    for (const d of dots) d.y += d.v * dt;
+    for (const d of dots) if (d.y > 560 && Math.abs(d.x - paddle) < 60) { d.hit = true; score++; }
+    if (dots.some((d) => d.y > 600 && !d.hit)) return gameOver();
+    dots = dots.filter((d) => !d.hit && d.y <= 600);
+    draw();
+    document.getElementById("score").textContent = score;
+    requestAnimationFrame(loop);
+  }
+  function draw() {
+    ctx.clearRect(0, 0, 800, 600);
+    ctx.fillStyle = css("--accent");
+    ctx.fillRect(paddle - 60, 570, 120, 14);
+    ctx.fillStyle = css("--ink");
+    for (const d of dots) { ctx.beginPath(); ctx.arc(d.x, d.y, 10, 0, Math.PI * 2); ctx.fill(); }
+  }
+  async function gameOver() {
+    running = false;
+    if (score > best) { best = score; await appkit.storage.set("best", best); }
+    document.getElementById("best").textContent = best;
+    appkit.notify(`Game over: ${score} points`);
+  }
+  function moveTo(clientX) {
+    const r = canvas.getBoundingClientRect();
+    paddle = Math.max(60, Math.min(740, ((clientX - r.left) / r.width) * 800));
+  }
+  canvas.addEventListener("pointermove", (e) => moveTo(e.clientX));
+  addEventListener("keydown", (e) => { if (e.key === "ArrowLeft") paddle = Math.max(60, paddle - 40); if (e.key === "ArrowRight") paddle = Math.min(740, paddle + 40); });
+  document.getElementById("start").addEventListener("click", reset);
+  appkit.storage.get("best", 0).then((b) => { best = b; document.getElementById("best").textContent = b; draw(); });
+</script>
+</body>
+</html>

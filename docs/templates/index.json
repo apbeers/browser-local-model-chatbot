@@ -1,0 +1,11 @@
+{
+ "templates": [
+  {"id": "blank", "name": "Blank", "file": "blank.html", "description": "Empty page with a header, a card and a button that saves a counter.", "keywords": ["simple", "page", "hello", "button", "counter"]},
+  {"id": "list", "name": "Checklist", "file": "list.html", "description": "Add, check off and delete items; saved automatically.", "keywords": ["todo", "to-do", "list", "checklist", "tasks", "shopping", "groceries", "packing", "items", "reminders"]},
+  {"id": "calculator", "name": "Calculator", "file": "calculator.html", "description": "Form inputs that update calculated results instantly.", "keywords": ["calculator", "calculate", "convert", "converter", "tip", "loan", "mortgage", "split", "budget", "bmi", "math", "units", "form"]},
+  {"id": "notes", "name": "Notes", "file": "notes.html", "description": "Notes list with search and an editor that autosaves.", "keywords": ["notes", "journal", "diary", "write", "editor", "text", "ideas", "documents"]},
+  {"id": "tracker", "name": "Tracker", "file": "tracker.html", "description": "Log numbers over time; stat tiles and a 7-day bar chart.", "keywords": ["track", "tracker", "habit", "log", "stats", "chart", "dashboard", "water", "workout", "expenses", "spending", "weight", "sleep", "mood"]},
+  {"id": "ai", "name": "AI helper", "file": "ai.html", "description": "Prompt box that asks the on-device model and streams the answer.", "keywords": ["ai", "assistant", "generate", "suggest", "write", "summarize", "summary", "translate", "chat", "explain", "ideas", "recipe", "quiz"]},
+  {"id": "game", "name": "Game", "file": "game.html", "description": "Canvas game loop with mouse/touch/keyboard input and a saved best score.", "keywords": ["game", "play", "canvas", "score", "arcade", "animation", "snake", "pong", "catch", "puzzle"]}
+ ]
+}

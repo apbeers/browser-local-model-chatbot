@@ -17,11 +17,12 @@ const VIEWS = {
   benchmark: () => import("./views/benchmark.js"),
   studio: () => import("./views/studio.js"),
   settings: () => import("./views/settings.js"),
+  run: () => import("./views/run.js"),
 };
-const TITLES = { chat: "Chat", models: "Models", dashboard: "Stats dashboard", benchmark: "Benchmark", studio: "Studio", settings: "Settings" };
+const TITLES = { chat: "Chat", models: "Models", dashboard: "Stats dashboard", benchmark: "Benchmark", studio: "Studio", settings: "Settings", run: "App" };
 
 async function route() {
-  const [, view = "chat", id] = (location.hash || "#/chat").split("/");
+  const [, view = "chat", id, ...rest] = (location.hash || "#/chat").split("/");
   const v = TITLES[view] ? view : "chat";
   state.view = v;
   for (const [name, el] of Object.entries($("views"))) el.hidden = name !== v;
@@ -29,12 +30,14 @@ async function route() {
   $("modelBar").hidden = v !== "chat";
   $("statsToggle").hidden = v !== "chat";
   $("title").textContent = TITLES[v];
+  // Studio workspaces and running apps use the full width on desktop.
+  $("app").classList.toggle("focus-mode", (v === "studio" && !!id) || v === "run");
   setSidebar(false);
   if (v === "chat") {
     await showChat(id ? decodeURIComponent(id) : null);
   } else {
     const mod = await VIEWS[v]();
-    await mod.render($("views")[v]);
+    await mod.render($("views")[v], [id, ...rest].filter(Boolean).map(decodeURIComponent));
   }
   renderSidebar();
 }

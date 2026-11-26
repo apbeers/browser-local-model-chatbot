@@ -63,6 +63,7 @@ export function buildLayout(root) {
   e.views = {};
   e.views.chat = h("section", { class: "view view-chat", dataset: { view: "chat" } }, e.banner, e.loadbar, e.projectBar, e.statsStrip, e.messages, e.composer);
   for (const [id] of NAV.slice(1)) e.views[id] = h("section", { class: "view view-page", dataset: { view: id }, hidden: true });
+  e.views.run = h("section", { class: "view view-run", dataset: { view: "run" }, hidden: true });
 
   e.app = h(
     "div",

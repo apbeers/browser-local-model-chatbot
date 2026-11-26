@@ -17,7 +17,7 @@ const walk = (dir) => {
     const rel = path.posix.join(dir, f);
     const st = fs.statSync(path.join(repo, rel));
     if (st.isDirectory()) walk(rel);
-    else if (/\.(js|css|svg|png|md|json)$/.test(f)) files.push(rel);
+    else if (/\.(js|css|svg|png|md|json|html)$/.test(f)) files.push(rel);
   }
 };
 for (const d of ["css", "js", "icons", "vendor/web-llm", "docs"]) walk(d);

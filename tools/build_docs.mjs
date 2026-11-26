@@ -40,5 +40,21 @@ const files = FILES.map(([p, summary, doc]) => {
   const lines = fs.readFileSync(full, "utf8").split("\n").length;
   return { path: p, summary, doc, lines };
 });
+// docs/patterns/index.json: each pattern's keywords (first line "keywords: a, b").
+const pdir = path.join(repo, "docs/patterns");
+const patterns = fs
+  .readdirSync(pdir)
+  .filter((f) => f.endsWith(".md"))
+  .sort()
+  .map((f) => {
+    const first = fs.readFileSync(path.join(pdir, f), "utf8").split("\n")[0];
+    if (!first.startsWith("keywords:")) throw new Error(`docs/patterns/${f} must start with "keywords: ..."`);
+    return { file: f, keywords: first.slice(9).split(",").map((s) => s.trim()).filter(Boolean) };
+  });
+fs.writeFileSync(path.join(pdir, "index.json"), JSON.stringify({ patterns }, null, 1) + "\n");
+for (const t of JSON.parse(fs.readFileSync(path.join(repo, "docs/templates/index.json"), "utf8")).templates) {
+  if (!fs.existsSync(path.join(repo, "docs/templates", t.file))) throw new Error(`missing template ${t.file}`);
+}
+
 fs.writeFileSync(path.join(repo, "docs/files.json"), JSON.stringify({ files }, null, 1) + "\n");
 console.log(`docs/files.json: ${files.length} files`);

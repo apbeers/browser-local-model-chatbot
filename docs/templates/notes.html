@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>Notes</title>
+<style>
+  #notes li { cursor: pointer; }
+  #notes li.active { background: var(--surface-3); }
+  #editor { min-height: 50vh; }
+</style>
+</head>
+<body>
+<main class="ak-app">
+  <header class="ak-header">
+    <h1>Notes</h1>
+    <button class="ak-btn primary" id="new">New note</button>
+  </header>
+  <div class="ak-split">
+    <aside class="ak-stack">
+      <input class="ak-input" id="search" placeholder="Search notes" type="search">
+      <ul class="ak-list" id="notes"></ul>
+    </aside>
+    <section class="ak-stack">
+      <input class="ak-input" id="title" placeholder="Title">
+      <textarea class="ak-textarea" id="editor" placeholder="Write here…"></textarea>
+      <div class="ak-row"><span class="ak-muted" id="saved"></span><span class="ak-spacer"></span><button class="ak-btn danger" id="delete">Delete</button></div>
+    </section>
+  </div>
+</main>
+<script>
+  // Each note: { id, title, body, updatedAt }
+  let notes = [];
+  let current = null;
+  const $ = (id) => document.getElementById(id);
+  let timer = null;
+
+  async function load() {
+    notes = await appkit.storage.get("notes", []);
+    current = notes[0] || null;
+    if (!current) newNote(); else show();
+  }
+  function persist() {
+    clearTimeout(timer);
+    timer = setTimeout(async () => { await appkit.storage.set("notes", notes); $("saved").textContent = "Saved"; }, 400);
+  }
+  function newNote() {
+    current = { id: Date.now(), title: "", body: "", updatedAt: Date.now() };
+    notes.unshift(current);
+    show();
+    $("title").focus();
+  }
+  function show() {
+    $("title").value = current ? current.title : "";
+    $("editor").value = current ? current.body : "";
+    renderList();
+  }
+  function renderList() {
+    const q = $("search").value.toLowerCase();
+    $("notes").replaceChildren(...notes
+      .filter((n) => (n.title + " " + n.body).toLowerCase().includes(q))
+      .map((n) => {
+        const li = document.createElement("li");
+        li.className = n === current ? "active" : "";
+        li.innerHTML = "<span></span>";
+        li.firstChild.textContent = n.title || n.body.slice(0, 40) || "Untitled";
+        li.addEventListener("click", () => { current = n; show(); });
+        return li;
+      }));
+  }
+  function edit() {
+    if (!current) return;
+    current.title = $("title").value;
+    current.body = $("editor").value;
+    current.updatedAt = Date.now();
+    $("saved").textContent = "Saving…";
+    renderList();
+    persist();
+  }
+  $("title").addEventListener("input", edit);
+  $("editor").addEventListener("input", edit);
+  $("search").addEventListener("input", renderList);
+  $("new").addEventListener("click", newNote);
+  $("delete").addEventListener("click", () => {
+    notes = notes.filter((n) => n !== current);
+    current = notes[0] || null;
+    persist();
+    if (!current) newNote(); else show();
+  });
+  load();
+</script>
+</body>
+</html>

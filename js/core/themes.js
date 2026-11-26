@@ -109,6 +109,24 @@ export function themeCSS(theme) {
   );
 }
 
+// CSS for Studio apps: the active theme on :root, light and dark.
+let activeTheme = null;
+export function appThemeCSS(theme = activeTheme || DEFAULT_THEME) {
+  const vars = (t, mode) =>
+    Object.entries({ ...expand(t), "critical-ink": mode === "light" ? "#b42323" : "#e66767" })
+      .map(([k, v]) => `--${k}:${v};`)
+      .join("");
+  return (
+    `:root{color-scheme:light;${vars(theme.light, "light")}}` +
+    `@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark;${vars(theme.dark, "dark")}}}` +
+    `:root[data-theme="dark"]{color-scheme:dark;${vars(theme.dark, "dark")}}`
+  );
+}
+// {mode, css} for appkit: light/dark follows the app's setting (system by default).
+export function appTheme() {
+  return { mode: getMode(), css: appThemeCSS() };
+}
+
 // ---------- storage ----------
 export async function listThemes() {
   return (await readJSON(FILE, [])) || [];
@@ -150,6 +168,7 @@ export function applyTheme(theme) {
 export async function activateTheme(id) {
   const theme = id === "default" ? null : (await listThemes()).find((t) => t.id === id);
   applyTheme(theme);
+  activeTheme = theme || null;
   await setSetting("themeId", theme ? id : "default");
   try {
     if (theme) {
