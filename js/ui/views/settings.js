@@ -86,6 +86,40 @@ export async function render(root) {
 
   page.append(h("h2", null, "Appearance"), await themeSection());
 
+  // Display: model stats on or off
+  const ls = (k, d) => {
+    try {
+      return localStorage.getItem(k) ?? d;
+    } catch {
+      return d;
+    }
+  };
+  const toggle = (key, label, apply) => {
+    const box = h("input", { type: "checkbox", id: "disp-" + key, checked: ls(key, "1") !== "0" ? true : null });
+    box.onchange = () => {
+      try {
+        localStorage.setItem(key, box.checked ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      apply(box.checked);
+    };
+    return h("label", { class: "row", for: "disp-" + key }, box, h("span", null, label));
+  };
+  page.append(
+    h("h2", null, "Display"),
+    card(
+      toggle("showStats", "Show the live model stats above the chat (speed, first token, context)", (on) => {
+        const strip = document.querySelector(".stats-strip");
+        if (strip) strip.classList.toggle("collapsed", !on);
+        const t = document.querySelector('[aria-label="Toggle live stats"]');
+        if (t) t.setAttribute("aria-pressed", String(on));
+      }),
+      toggle("showMsgStats", "Show stats under each reply (tokens, tok/s, time to first token)", (on) => document.body.classList.toggle("hide-msg-stats", !on)),
+      note("On ultrawide screens the live stats sit in a panel to the right of the chat."),
+    ),
+  );
+
   // This device
   const id = await app.device.getDeviceIdentity();
   const input = h("input", { class: "input", style: "flex:1;min-width:180px", value: id.label, "aria-label": "Device name" });

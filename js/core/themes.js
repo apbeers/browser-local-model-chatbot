@@ -169,6 +169,7 @@ export async function activateTheme(id) {
   const theme = id === "default" ? null : (await listThemes()).find((t) => t.id === id);
   applyTheme(theme);
   activeTheme = theme || null;
+  window.dispatchEvent(new Event("app-theme-changed"));
   await setSetting("themeId", theme ? id : "default");
   try {
     if (theme) {
@@ -190,6 +191,7 @@ export async function restoreTheme() {
 
 // Light / dark / system mode (separate from the palette).
 export function setMode(mode) {
+  setTimeout(() => window.dispatchEvent(new Event("app-theme-changed")));
   const root = document.documentElement;
   if (mode === "light" || mode === "dark") root.dataset.theme = mode;
   else delete root.dataset.theme;

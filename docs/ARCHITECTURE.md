@@ -24,6 +24,8 @@ It is plain JavaScript ES modules and CSS. There is no build step and no framewo
  |     |            '-> chat/chat-actions.js (rename/move/delete) |
  |     '----> views/*.js  (models, dashboard, benchmark,         |
  |                         studio, settings, theme-maker)         |
+ |  studio/*.js (workspace: agent chat, preview, files, changes,  |
+ |              console; pin.js; personalize.js)                 |
  |  helpers: dom.js (h(), dialogs, toast, formatting),            |
  |           markdown.js, charts.js, diff.js, state.js            |
  +------------------------------+-------------------------------+
@@ -33,6 +35,9 @@ It is plain JavaScript ES modules and CSS. There is no build step and no framewo
  |  api.js (the `app` object) -> engine.js (WebLLM in a worker)   |
  |  chats.js  projects.js  stats.js  models.js  themes.js         |
  |  variants.js (custom UIs)  builder.js (coding model)           |
+ |  apps.js + app-runtime.js + appkit/ (sandboxed Studio apps)    |
+ |  agent.js (plan/write/check/fix)  pins.js + pin-host.js        |
+ |  tools.js (tool calling)  usage.js  storage.js                 |
  |  benchmark.js  retention.js (settings, auto-delete)  opfs.js   |
  +------------------------------+-------------------------------+
                                 |
@@ -67,3 +72,10 @@ needs to contain the files it changes.
 ## Routes (location.hash)
 `#/chat`, `#/chat/<chatId>`, `#/models`, `#/dashboard`, `#/benchmark`,
 `#/studio`, `#/settings`. main.js `route()` shows one `<section class="view">`.
+
+## Studio apps (separate from the chatbot UI)
+An app is one HTML file in OPFS (app/apps/<id>/index.html). It runs in an
+`<iframe sandbox="allow-scripts">` with no access to the app's storage; the
+`appkit` script injected into it talks to app-runtime.js by postMessage for
+storage (apps-data/<id>/), the on-device model, tools and the theme.
+See APPKIT.md and APP_RULES.md. Pinned apps live at pins/<id>/ (pin.html).

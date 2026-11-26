@@ -143,6 +143,8 @@ export function mountApp(container, opts) {
     }
   };
   window.addEventListener("message", onMessage);
+  // Light/dark or color changes in the host reach the app right away.
+  window.addEventListener("app-theme-changed", sendTheme);
 
   async function load(html) {
     kv = null;
@@ -156,6 +158,7 @@ export function mountApp(container, opts) {
     setTheme: sendTheme,
     destroy() {
       window.removeEventListener("message", onMessage);
+      window.removeEventListener("app-theme-changed", sendTheme);
       iframe.remove();
     },
   };

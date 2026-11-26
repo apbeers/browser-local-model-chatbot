@@ -5,5 +5,9 @@ Each page module exports `async function render(root)` and draws into `root` (a 
 - benchmark.js: runs `app.benchmark.runBenchmark` and shows a results table.
 - settings.js: theme list and light/dark switch, device name, install help, auto-delete, delete data.
 - theme-maker.js: `openThemeMaker(theme | null, onDone)` dialog.
-- studio.js / studio-editor.js: custom UIs. studio-model.js: `prepareBuilder()` loads the coding model.
+- studio.js: Studio home (new app, templates, your apps, chatbot UIs). The workspace is in js/ui/studio/:
+  workspace.js (layout and tabs), agent-panel.js, preview-tab.js, files-tab.js, changes-tab.js,
+  console-tab.js, adapters.js (app vs chatbot UI), pin.js, personalize.js.
+  studio-model.js: `prepareBuilder()` loads the coding model.
+- run.js: runs a Studio app full screen (#/run/<id>). storage.js: the storage manager.
 Pages use `h()` and classes `.page`, `.card`, `.row`, `.btn`, `.table-wrap` + `.table`, `.kpis` + `.kpi`.

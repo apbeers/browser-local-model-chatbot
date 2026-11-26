@@ -11,15 +11,22 @@ A chat app that runs language models **on your device** with WebGPU, measures ho
 
 ## Features
 
-- **Chat** with Markdown replies, regenerate, copy, and live speed numbers (decode and prefill tok/s, time to first token, context used / window, session totals, load time, GPU).
-- **Projects:** groups of chats with optional instructions (sent as a system prompt), a default model and their own auto-delete setting. Move chats between projects; delete a chat, a project (keeping or deleting its chats) or everything.
-- **Search** across all chats, and **export** a chat or a project as Markdown or JSON.
-- **Models:** 24 common models grouped by size, with ✓ on downloaded ones; optionally every WebLLM model (about 120 more). The Models page shows storage use and deletes models.
-- **Auto-delete** (off by default): downloaded models unused for 30/60/90 days; chats not opened for 30/60/90 days, globally or per project.
-- **Stats dashboard:** every session is logged to OPFS as it runs. Filter by model, device, project, type (chat, benchmark, Studio) and time; charts, a group-by table and per-session details. Export JSON on each device and import them to compare devices.
-- **Benchmark:** fixed prompts, greedy decoding and a fixed seed, so devices and models are compared fairly.
-- **Themes:** the built-in light/dark theme plus your own. Describe one ("calm forest greens") and the on-device coding model designs it, or pick colors by hand. Contrast is checked and previewed before saving.
-- **Studio (build your own app):** copy the default UI, then change styles or any screen with the coding model or by hand. Suggested code is syntax-checked and shown as a diff before it's saved; every save can be undone. Keep several UIs and switch between them or preview one in a window.
+- **Chat** with Markdown replies, regenerate, copy, and live speed numbers (decode and prefill tok/s, time to first token, context used / window, session totals, load time, GPU). Both the stats strip and the per-reply stats can be hidden (Settings → Display). Layouts for phones, desktops and ultrawide screens (stats move to a side panel at 1800px+).
+- **Tools and web access** (per chat, per project, or default in Settings: off / offline / web). Any model can call tools: each step it picks one tool and one text input with JSON-constrained output, up to 3 calls, then answers with the results. Offline: calculator, date/time, run JavaScript (sandboxed Worker, 3 s limit), search chats, notes. Web (only sources that allow browser access): Wikipedia, Open-Meteo weather, Hacker News, any URL that allows CORS. Tool calls are shown with each reply.
+- **Projects:** groups of chats with instructions (system prompt), a default model, tools and their own auto-delete. Search across chats; export a chat or project as Markdown or JSON.
+- **Models:** 27 common models grouped by size (✓ on downloaded ones), optionally every WebLLM model. Auto-delete unused models after 30/60/90 days (off by default).
+- **Studio, an offline code editor with an on-device agent:**
+  - Desktop: agent chat on the left; **Preview** (phone/tablet/desktop/ultrawide sizes), **Files**, **Changes** (diffs, history, undo) and **Console** tabs. Phones: one panel at a time with a bottom tab bar.
+  - **Apps** are single-file HTML tools (like artifacts) that run sandboxed. `appkit` gives each one its own storage and files, the on-device model, tools and the theme (light/dark follow the app). 7 starter templates.
+  - The agent plans (JSON), writes from the closest template, checks syntax and runs the draft in the preview to catch errors, and fixes them (up to twice). You keep or discard the draft.
+  - Coding model: Qwen2.5-Coder 1.5B on phones, 3B on laptops, 7B on desktops with a discrete GPU, with every size selectable; 8k context on phones, 16k on desktops.
+  - **Pin apps to the Home Screen** as their own installable apps that work offline. Each pin carries a packed copy of the app so a fresh iPhone/iPad Home Screen app can set itself up.
+  - **Custom chatbot UIs** use the same workspace (drafts previewed before saving).
+  - **Customize for me:** turns your usage log into a plan (start page, menu order, hidden pages, example prompts, accent, compact layout) and builds a custom UI from it.
+- **Themes:** built-in light/dark plus your own (designed by the coding model or by hand); every theme has light and dark colors and follows the system by default.
+- **Storage manager:** every file the app keeps in OPFS, Cache Storage and localStorage, with what it is and where it came from; view and delete. Website files are listed read-only.
+- **Usage log** (on by default, device only, never message text): pages and features used, plus optional 1–3 word chat topics labelled on the device. View, turn off or delete in Settings.
+- **Stats dashboard** and **Benchmark** as before: filter by model, device, project, type and time; export/import JSON to compare devices.
 
 ## How custom UIs work
 
@@ -50,7 +57,7 @@ Themes use JSON-schema-constrained output, so the model can only answer with val
 ## Docs shipped to the browser
 
 `docs/` is part of the app and is cached for offline use:
-`ARCHITECTURE.md` (diagram and data flow), `API.md` (the `app` object), `THEMING.md` (color tokens), `CSS_CLASSES.md`, `STUDIO_RULES.md`, `components/*.md` (one per UI file) and `files.json`.
+`ARCHITECTURE.md` (diagram and data flow), `API.md` (the `app` object), `THEMING.md` (color tokens), `CSS_CLASSES.md`, `STUDIO_RULES.md`, `components/*.md` (one per UI file), `files.json`, and for Studio apps `APPKIT.md`, `APP_RULES.md`, `patterns/*.md` (small code patterns picked by keyword) and `templates/*.html`.
 
 ## Development
 

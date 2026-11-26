@@ -2213,3 +2213,80 @@ dialog:has(.preview-frame) {
   padding: 10px;
   border-radius: var(--radius-sm);
 }
+
+/* ---------- Ultrawide (1800px and up) ---------- */
+@media (min-width: 1800px) {
+  :root {
+    --sidebar-w: 300px;
+  }
+  .page {
+    max-width: 1480px;
+  }
+  .msg,
+  .composer-inner,
+  .composer-hint,
+  .banner,
+  .loadbar,
+  .project-bar {
+    max-width: 1040px;
+  }
+  /* Chat page: live stats become a side panel on the right. */
+  .view-chat {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "banner side" "load side" "project side" "messages side" "composer side";
+  }
+  .view-chat > .banner {
+    grid-area: banner;
+  }
+  .view-chat > .loadbar {
+    grid-area: load;
+  }
+  .view-chat > .project-bar {
+    grid-area: project;
+  }
+  .view-chat > .messages {
+    grid-area: messages;
+  }
+  .view-chat > .composer {
+    grid-area: composer;
+  }
+  .view-chat > .stats-strip {
+    grid-area: side;
+    grid-template-columns: 1fr;
+    align-content: start;
+    width: auto;
+    max-width: none;
+    margin: 12px 16px 12px 0;
+    background: transparent;
+    border: 0;
+    gap: 8px;
+    overflow-y: auto;
+  }
+  .view-chat > .stats-strip .stat {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+  }
+  .view-chat > .stats-strip .stat-value {
+    font-size: 22px;
+  }
+  .view-chat > .stats-strip.collapsed {
+    display: none;
+  }
+  .view-chat:has(> .stats-strip.collapsed) {
+    grid-template-columns: minmax(0, 1fr) 0;
+  }
+  .studio {
+    grid-template-columns: minmax(240px, 320px) 1fr;
+  }
+  .ws {
+    grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
+  }
+}
+
+/* Hide the stats line under each reply (Settings → Display) */
+.hide-msg-stats .msg-meta > span {
+  display: none;
+}

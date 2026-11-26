@@ -51,6 +51,7 @@ function bindChrome() {
   $("scrim").onclick = () => setSidebar(false);
   const strip = $("statsStrip");
   const toggle = $("statsToggle");
+  document.body.classList.toggle("hide-msg-stats", lsGet("showMsgStats", "1") === "0");
   if (lsGet("showStats", "1") === "0") {
     toggle.setAttribute("aria-pressed", "false");
     strip.classList.add("collapsed");
