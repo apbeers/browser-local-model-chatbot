@@ -1,13 +1,14 @@
 // Service worker: caches the app shell so the app opens offline.
-// Model weights are NOT cached here; WebLLM stores them in OPFS itself.
+// Model weights are NOT cached here: they come from Hugging Face and WebLLM
+// stores them in OPFS itself.
 // VERSION and ASSETS are rewritten by tools/build_sw.mjs.
 
-const VERSION = "bb79027a799e";
+const VERSION = "82cf6f1d4e8e";
 const ASSETS = [
   "./",
   "index.html",
   "manifest.webmanifest",
-  "models/catalog.json",
+  "models.json",
   "css/app.css",
   "js/app.js",
   "js/catalog.js",
@@ -15,15 +16,18 @@ const ASSETS = [
   "js/chats.js",
   "js/device.js",
   "js/engine.js",
+  "js/install.js",
   "js/llm-worker.js",
   "js/markdown.js",
   "js/models.js",
   "js/opfs.js",
+  "js/retention.js",
   "js/stats.js",
   "js/ui.js",
   "js/views/dashboard.js",
   "js/views/models-view.js",
   "js/views/settings.js",
+  "icons/icon-180.png",
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/icon-maskable-512.png",
@@ -55,18 +59,18 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  if (!url.href.startsWith(SCOPE)) return; // other origins / the large-models site
+  if (!url.href.startsWith(SCOPE)) return; // Hugging Face, GitHub and other origins
   const path = url.href.slice(SCOPE.length).split("?")[0];
 
-  // Model files go straight to the network (WebLLM caches them in OPFS).
-  if (path.startsWith("models/") && path !== "models/catalog.json") return;
-
-  // The catalog: network first so new models show up, cache as fallback.
-  if (path === "models/catalog.json") {
+  // The model list: network first so updates show up, cached copy when offline.
+  if (path === "models.json") {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          if (res.ok) caches.open(CACHE).then((c) => c.put(new URL(path, SCOPE).href, res.clone()));
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(new URL(path, SCOPE).href, copy));
+          }
           return res;
         })
         .catch(() => caches.match(new URL(path, SCOPE).href)),

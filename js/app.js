@@ -2,7 +2,10 @@ import { LLM } from "./engine.js";
 import { renderMarkdown, installCopyHandler } from "./markdown.js";
 import { listChats, getChat, saveChat, newChat, deleteChat, renameChat, titleFrom } from "./chats.js";
 import { getGPUInfo, gpuLabel, webgpuAvailable } from "./device.js";
-import { scanModelCache, cachedFraction, fmtBytes } from "./models.js";
+import { scanModelCache, cacheInfo, fmtBytes } from "./models.js";
+import { GROUP_LABELS, findModel } from "./catalog.js";
+import { getSettings, runAutoDelete } from "./retention.js";
+import { initInstall, installHelp, onInstallChange } from "./install.js";
 import { opfsAvailable, readJSON, writeJSON } from "./opfs.js";
 import { Session } from "./stats.js";
 import { h, iconBtn, icons, toast, confirmDialog, promptDialog, fmtNum, fmtMs, relTime } from "./ui.js";
@@ -66,6 +69,10 @@ function lsSet(k, v) {
 async function init() {
   applyTheme(lsGet("theme", "system"));
   registerSW();
+  initInstall();
+  onInstallChange(() => {
+    if (app.view === "chat" && els.messages.querySelector(".empty-state")) renderMessages();
+  });
   bindChrome();
   installCopyHandler(els.messages);
 
@@ -88,8 +95,10 @@ async function init() {
     );
     recordUnsupported();
   }
+  await autoDelete();
+  setInterval(autoDelete, 6 * 3600000);
   await refreshScan();
-  populateModelSelect();
+  await populateModelSelect();
   bindLLMEvents();
   renderStats();
   await renderChatList();
@@ -104,7 +113,7 @@ async function recordUnsupported() {
   if (flag) return;
   try {
     const s = await Session.start({
-      model: { id: "(no WebGPU)", label: "No WebGPU", host: "-", bytes: 0, vramMB: 0, contextWindow: 0 },
+      model: { id: "(no WebGPU)", label: "No WebGPU", bytes: 0, vramMB: 0, contextWindow: 0 },
       webllmVersion: app.catalog ? app.catalog.webllm : "",
       cachedBefore: 0,
     });
@@ -236,8 +245,24 @@ async function refreshScan() {
 }
 app.refreshScan = async () => {
   await refreshScan();
-  populateModelSelect();
+  await populateModelSelect();
 };
+
+async function autoDelete() {
+  if (!app.catalog || !opfsAvailable()) return;
+  try {
+    const gone = await runAutoDelete(app.catalog, { keepId: llm.modelId });
+    if (gone.length) {
+      toast(`Deleted ${gone.map((m) => m.label).join(", ")} (not used recently)`, 5000);
+      await refreshScan();
+      await populateModelSelect();
+      updateFoot();
+    }
+  } catch (e) {
+    console.warn("auto-delete failed", e);
+  }
+}
+app.autoDelete = autoDelete;
 
 function modelUsable(m) {
   if (!app.gpu || !app.gpu.available) return false;
@@ -246,22 +271,37 @@ function modelUsable(m) {
 }
 app.modelUsable = modelUsable;
 
-function populateModelSelect() {
+const isSaved = (m) => cacheInfo(m, app.scan).complete;
+
+async function populateModelSelect() {
   const sel = els.modelSelect;
-  sel.innerHTML = "";
   if (!app.catalog) return;
-  const saved = lsGet("model");
-  let firstUsable = null;
-  for (const m of app.catalog.models) {
-    const cached = app.scan ? cachedFraction(m, app.scan) > 0.97 : false;
-    const usable = modelUsable(m);
-    if (usable && !firstUsable) firstUsable = m.id;
-    const label = `${m.label} · ${fmtBytes(m.bytes)}${cached ? " · saved" : ""}${usable ? "" : " · needs shader-f16"}`;
-    sel.append(h("option", { value: m.id, disabled: !usable && app.gpu && app.gpu.available ? true : null }, label));
+  const settings = await getSettings();
+  const current = llm.modelId || sel.value || lsGet("model");
+  sel.innerHTML = "";
+  const groups = {};
+  for (const m of app.catalog.all) {
+    // "More" models only appear when enabled, or when already saved/selected.
+    if (!m.quick && !settings.showAllModels && !isSaved(m) && m.id !== current) continue;
+    (groups[m.group] ||= []).push(m);
   }
-  const want = saved && app.catalog.models.some((m) => m.id === saved && modelUsable(m)) ? saved : firstUsable || app.catalog.models[0]?.id;
-  if (llm.modelId) sel.value = llm.modelId;
-  else if (want) sel.value = want;
+  let firstUsable = null;
+  for (const g of ["small", "medium", "large", "more"]) {
+    if (!groups[g]) continue;
+    const og = h("optgroup", { label: GROUP_LABELS[g] });
+    for (const m of groups[g]) {
+      const usable = modelUsable(m);
+      if (usable && !firstUsable) firstUsable = m.id;
+      const size = m.bytes != null ? fmtBytes(m.bytes) : `~${fmtBytes(m.vramMB * 1048576)} GPU`;
+      const label = `${isSaved(m) ? "✓ " : ""}${m.label} · ${size}${usable || !(app.gpu && app.gpu.available) ? "" : " · needs f16"}`;
+      og.append(h("option", { value: m.id, disabled: !usable && app.gpu && app.gpu.available ? true : null }, label));
+    }
+    sel.append(og);
+  }
+  const ok = (id) => id && [...sel.options].some((o) => o.value === id && !o.disabled);
+  // First visit: a sensible small default rather than the tiniest model.
+  const preferred = ["Qwen2.5-0.5B-Instruct-q4f16_1-MLC", "SmolLM2-360M-Instruct-q4f32_1-MLC"].find(ok);
+  sel.value = ok(current) ? current : preferred || firstUsable || (sel.options[0] && sel.options[0].value);
   updateLoadButton();
 }
 
@@ -275,25 +315,41 @@ function updateLoadButton() {
     b.textContent = "Loaded";
     b.disabled = true;
   } else {
-    const m = app.catalog && app.catalog.models.find((x) => x.id === sel);
-    const cached = m && app.scan ? cachedFraction(m, app.scan) > 0.97 : false;
-    b.textContent = cached ? "Load" : "Download";
+    const m = app.catalog && findModel(app.catalog, sel);
+    b.textContent = m && isSaved(m) ? "Load" : "Download";
     b.disabled = !m || !modelUsable(m) || llm.state === "generating";
   }
   els.modelSelect.disabled = llm.state === "loading" || llm.state === "generating";
 }
 
+// Asks before big downloads; returns false if the user cancels.
+async function confirmDownload(m) {
+  if (isSaved(m)) return true;
+  if (navigator.onLine === false) return true; // the engine explains the offline case
+  const mobile = /Android|iPhone|iPad/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
+  const big = m.bytes == null ? m.vramMB > 1500 : m.bytes >= 1e9;
+  if (!big) return true;
+  const size = m.bytes != null ? fmtBytes(m.bytes) : "a large amount of data";
+  const warn = mobile && (m.bytes || m.vramMB * 1048576) > 2.5e9 ? " Models this large often run out of memory on phones." : "";
+  return confirmDialog(`Download ${m.label}?`, `This downloads ${size} from Hugging Face and saves it in this browser.${warn}`, "Download", false);
+}
+
 export async function loadModel(id) {
+  const m = app.catalog && findModel(app.catalog, id);
+  if (!m || !(await confirmDownload(m))) return;
   els.modelSelect.value = id;
   lsSet("model", id);
+  const wasSaved = isSaved(m);
   try {
     await llm.load(id);
     toast(`${llm.model.label} is ready`);
+    // Ask the browser not to evict downloaded models.
+    if (!wasSaved && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   } catch (err) {
     showBanner("Model failed to load: " + (err && err.message ? err.message : err), true);
   }
   await refreshScan();
-  populateModelSelect();
+  await populateModelSelect();
   updateFoot();
 }
 app.loadModel = loadModel;
@@ -438,6 +494,29 @@ function renderMessages() {
         ),
       ),
     );
+    const help = lsGet("hideInstall") === "1" ? null : installHelp();
+    if (help) {
+      els.messages.querySelector(".empty-state").append(
+        h(
+          "div",
+          { class: "install-card" },
+          h("strong", null, "Use it offline"),
+          help,
+          h(
+            "button",
+            {
+              class: "md-copy",
+              type: "button",
+              onclick: (e) => {
+                lsSet("hideInstall", "1");
+                e.target.closest(".install-card").remove();
+              },
+            },
+            "Dismiss",
+          ),
+        ),
+      );
+    }
     return;
   }
   chat.messages.forEach((m, i) => box.append(messageEl(m, i)));

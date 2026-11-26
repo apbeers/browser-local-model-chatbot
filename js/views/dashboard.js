@@ -40,7 +40,7 @@ export async function renderDashboard(root, app) {
 
   // Stable color per model: catalog order, then first-seen order for unknown/imported ones.
   // Only models that have data get a slot, so the first (most distinct) colors are used.
-  const catalogOrder = app.catalog ? app.catalog.models.map((m) => m.label) : [];
+  const catalogOrder = app.catalog ? app.catalog.quick.map((m) => m.label) : [];
   const present = [...new Set(all.filter((s) => s.generations.length || s.status !== "load-failed").map((s) => s.model.label || s.model.id))];
   const modelOrder = [...catalogOrder.filter((l) => present.includes(l)), ...present.filter((l) => !catalogOrder.includes(l))];
   const modelColor = (label) => colorVar(Math.max(0, modelOrder.indexOf(label)));

@@ -650,6 +650,24 @@ svg {
   color: var(--ink);
   text-align: left;
 }
+.install-card {
+  margin-top: 20px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-align: left;
+  font-size: 14px;
+  color: var(--ink-2);
+  display: grid;
+  gap: 6px;
+}
+.install-card strong:first-child {
+  color: var(--ink);
+}
+.install-card .md-copy {
+  justify-self: end;
+}
 .suggestion:hover {
   background: var(--surface-2);
 }

@@ -2,6 +2,8 @@ import { h, toast, confirmDialog } from "../ui.js";
 import { getDeviceIdentity, setDeviceLabel, getDeviceInfo, gpuLabel } from "../device.js";
 import { deleteAllChats } from "../chats.js";
 import { deleteAllSessions, APP_VERSION } from "../stats.js";
+import { installHelp, isStandalone } from "../install.js";
+import { autoDeleteSelect } from "./models-view.js";
 
 export function applyTheme(mode) {
   const root = document.documentElement;
@@ -111,19 +113,43 @@ export async function renderSettings(root, app) {
     ),
   );
 
-  // Offline
-  let swState = "not supported";
+  // Offline + install
+  let swState = "not supported in this browser";
   if ("serviceWorker" in navigator) {
     const reg = await navigator.serviceWorker.getRegistration();
-    swState = reg && reg.active ? "installed — the app works offline" : "not installed yet (reload once online)";
+    swState = reg && reg.active ? "ready: the app opens with no connection" : "not ready yet (reload once while online)";
   }
+  const help = installHelp();
   page.append(
-    h("h2", null, "Offline app"),
+    h("h2", null, "Offline & install"),
     h(
       "div",
       { class: "card" },
-      h("dl", { class: "kv" }, h("dt", null, "Offline support"), h("dd", null, swState), h("dt", null, "App version"), h("dd", null, APP_VERSION), h("dt", null, "WebLLM"), h("dd", null, app.catalog ? app.catalog.webllm : "–")),
-      h("p", { style: "margin:10px 0 0;color:var(--ink-2);font-size:14px" }, "Install it from your browser menu (“Install app” or “Add to Home Screen”). Models you have downloaded keep working with no network."),
+      h(
+        "dl",
+        { class: "kv" },
+        h("dt", null, "Offline app"),
+        h("dd", null, swState),
+        h("dt", null, "Installed"),
+        h("dd", null, isStandalone() ? "yes, running as an app" : "no, running in the browser"),
+        h("dt", null, "App version"),
+        h("dd", null, APP_VERSION),
+        h("dt", null, "WebLLM"),
+        h("dd", null, app.catalog ? app.catalog.webllm : "–"),
+      ),
+      help ? h("div", { style: "margin-top:12px;font-size:14px;color:var(--ink-2)" }, help) : null,
+      h("p", { style: "margin:10px 0 0;color:var(--ink-2);font-size:14px" }, "Downloaded models, chats and stats stay on this device and keep working without a connection."),
+    ),
+  );
+
+  // Models
+  page.append(
+    h("h2", null, "Downloaded models"),
+    h(
+      "div",
+      { class: "card" },
+      h("div", { class: "row" }, h("label", { for: "auto-delete", style: "flex:1" }, "Auto-delete models that haven't been used"), autoDeleteSelect(app)),
+      h("p", { style: "margin:10px 0 0;color:var(--ink-2);font-size:14px" }, "Checked when the app opens and every few hours. The model that's currently loaded is never deleted."),
     ),
   );
 

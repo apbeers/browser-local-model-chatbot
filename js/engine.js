@@ -1,9 +1,10 @@
 // Thin wrapper around WebLLM running in a module worker. Handles model loading,
 // streaming chat with detailed timing, and the stats session lifecycle.
 
-import { loadCatalog, buildAppConfig } from "./catalog.js";
+import { loadCatalog, buildAppConfig, findModel } from "./catalog.js";
 import { Session, errText } from "./stats.js";
-import { scanModelCache, cachedFraction } from "./models.js";
+import { scanModelCache, cacheInfo } from "./models.js";
+import { touchModel } from "./retention.js";
 
 const WINDOW = 16; // tokens per throughput window (for throttling curves)
 
@@ -44,7 +45,7 @@ export class LLM extends EventTarget {
 
   async load(modelId) {
     if (!this.catalog) await this.init();
-    const model = this.catalog.models.find((m) => m.id === modelId);
+    const model = findModel(this.catalog, modelId);
     if (!model) throw new Error("Unknown model " + modelId);
     if (this.state === "loading") throw new Error("A model is already loading");
     if (this.session) {
@@ -58,27 +59,31 @@ export class LLM extends EventTarget {
     this.emit("progress", this.loadProgress);
 
     let cachedBefore = 0;
+    let complete = false;
     try {
-      cachedBefore = cachedFraction(model, await scanModelCache(this.catalog));
+      const info = cacheInfo(model, await scanModelCache(this.catalog));
+      complete = info.complete;
+      cachedBefore = complete ? 1 : info.fraction;
     } catch {
       /* ignore */
     }
     const lib = await webllm();
     const session = await Session.start({ model, webllmVersion: this.catalog.webllm, cachedBefore });
     this.session = session;
-    if (cachedBefore < 0.97) {
+    if (!complete) {
       // Fail fast with a readable message instead of WebLLM's bare "Load failed".
       let res = null;
       try {
+        if (navigator.onLine === false) throw new Error("offline");
         res = await fetch(model.modelUrl + "mlc-chat-config.json", { cache: "no-store" });
       } catch {
         /* network or CORS failure */
       }
       if (!res || !res.ok) {
-        const u = new URL(model.modelUrl);
         const err = new Error(
-          `Can't reach the model files at ${u.host}${u.pathname} (${res ? "HTTP " + res.status : "network error"}). ` +
-            "Check your connection and that the site hosting this model is published.",
+          navigator.onLine === false
+            ? `You're offline and ${model.label} isn't fully downloaded yet. Connect once to download it; after that it works offline.`
+            : `Can't reach Hugging Face to download ${model.label} (${res ? "HTTP " + res.status : "network error"}). Check your connection and try again.`,
         );
         await session.loadFailed(err);
         this.session = null;
@@ -105,6 +110,7 @@ export class LLM extends EventTarget {
         await this.engine.reload(modelId);
       }
       await session.loaded();
+      touchModel(modelId).catch(() => {});
       this.modelId = modelId;
       this.lastHistoryKey = null;
       this.kvTokens = 0;
@@ -265,6 +271,7 @@ export class LLM extends EventTarget {
       maxTokens: maxTokens || null,
     };
     if (this.session) await this.session.addGeneration(gen);
+    touchModel(this.modelId).catch(() => {});
     this.emit("generation", gen);
     return { text, gen };
   }

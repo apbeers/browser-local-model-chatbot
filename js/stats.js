@@ -45,7 +45,7 @@ export class Session {
       model: {
         id: model.id,
         label: model.label,
-        host: model.host,
+        source: model.hfRepo || model.host || null,
         params: model.params,
         quant: model.quant,
         bytes: model.bytes,

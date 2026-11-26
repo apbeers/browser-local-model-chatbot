@@ -9,7 +9,7 @@ import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const files = ["index.html", "manifest.webmanifest", "models/catalog.json"];
+const files = ["index.html", "manifest.webmanifest", "models.json"];
 const walk = (dir) => {
   for (const f of fs.readdirSync(path.join(repo, dir)).sort()) {
     const rel = path.posix.join(dir, f);
