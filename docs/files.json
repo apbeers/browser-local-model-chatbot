@@ -100,7 +100,7 @@
    "path": "js/ui/views/dashboard.js",
    "summary": "Stats dashboard: filters and number tiles.",
    "doc": "components/views.md",
-   "lines": 174
+   "lines": 181
   },
   {
    "path": "js/ui/views/dashboard-charts.js",
@@ -112,7 +112,7 @@
    "path": "js/ui/views/dashboard-tables.js",
    "summary": "Stats dashboard tables and session details.",
    "doc": "components/views.md",
-   "lines": 315
+   "lines": 319
   },
   {
    "path": "js/ui/charts.js",
@@ -124,7 +124,7 @@
    "path": "css/app.css",
    "summary": "All default styles (large: prefer css/custom.css).",
    "doc": "CSS_CLASSES.md",
-   "lines": 2339
+   "lines": 2351
   }
  ]
 }

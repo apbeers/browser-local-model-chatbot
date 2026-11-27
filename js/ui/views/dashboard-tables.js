@@ -50,6 +50,7 @@ export function renderTables(page, { filtered, gensOf, rerender, state }) {
       decodeP90: percentile(dv, 90),
       prefillMedian: median(gg.map((g) => g.prefillTps)),
       ttftMedian: median(gg.map((g) => g.ttftMs)),
+      gpuPeak: median(gg.map((g) => g.gpuPeakMB).filter(Boolean)),
       loadCached: median(ld.filter((s) => s.load.cachedBefore > 0.97).map((s) => s.load.totalMs)),
       loadDl: median(ld.filter((s) => !(s.load.cachedBefore > 0.97)).map((s) => s.load.totalMs)),
       failures: ss.filter((s) => s.status === "load-failed").length + ss.reduce((a, s) => a + (s.errors ? s.errors.length : 0), 0),
@@ -65,6 +66,7 @@ export function renderTables(page, { filtered, gensOf, rerender, state }) {
     ["decodeP90", "p90", (v) => fmtNum(v), true],
     ["prefillMedian", "Prefill tok/s", (v) => fmtNum(v, 0), true],
     ["ttftMedian", "TTFT", fmtMs, true],
+    ["gpuPeak", "GPU peak", (v) => (v ? fmtNum(v, 0) + " MB" : "–"), true],
     ["loadCached", "Load (cache)", fmtMs, true],
     ["loadDl", "Load (download)", fmtMs, true],
     ["failures", "Failures", (v) => fmtNum(v, 0), true],
@@ -227,6 +229,7 @@ function sessionDetails(s, onDelete) {
           ? `${fmtMs(s.load.totalMs)} · ${s.load.cachedBefore > 0.97 ? "from cache" : "downloaded " + fmtBytes(s.load.downloadBytes)}${s.load.downloadMBps ? ` at ${s.load.downloadMBps} MB/s` : ""}`
           : "–",
       ),
+      s.load && s.load.gpuMB ? [h("dt", null, "GPU memory"), h("dd", null, `${s.load.gpuMB} MB after loading (measured)`)] : null,
       s.load && s.load.phases ? [h("dt", null, "Load phases"), h("dd", null, Object.entries(s.load.phases).map(([k, v]) => `${k} ${fmtMs(v)}`).join(" · ") || "–")] : null,
       s.load && s.load.error ? [h("dt", null, "Load error"), h("dd", { style: "color:var(--critical-ink)" }, s.load.error)] : null,
       s.batteryStart ? [h("dt", null, "Battery"), h("dd", null, `${s.batteryStart.level}%${s.batteryStart.charging ? " charging" : ""}${s.batteryEnd ? ` → ${s.batteryEnd.level}%` : ""}`)] : null,
@@ -242,7 +245,7 @@ function sessionDetails(s, onDelete) {
         h(
           "table",
           { class: "table" },
-          h("thead", null, h("tr", null, ["#", "Prompt tok", "Output tok", "Decode tok/s", "Wall tok/s", "Prefill tok/s", "TTFT", "Total", "Context", "End"].map((t, i) => h("th", { class: i ? "num" : null }, t)))),
+          h("thead", null, h("tr", null, ["#", "Prompt tok", "Output tok", "Decode tok/s", "Wall tok/s", "Prefill tok/s", "TTFT", "Total", "Context", "GPU peak", "End"].map((t, i) => h("th", { class: i ? "num" : null }, t)))),
           h(
             "tbody",
             null,
@@ -259,6 +262,7 @@ function sessionDetails(s, onDelete) {
                 h("td", { class: "num" }, fmtMs(g.ttftMs)),
                 h("td", { class: "num" }, fmtMs(g.e2eMs)),
                 h("td", { class: "num" }, `${g.contextTokens ?? "–"}/${g.contextWindow ?? "–"}`),
+                h("td", { class: "num" }, g.gpuPeakMB ? `${g.gpuPeakMB} MB` : "–"),
                 h("td", { class: "num" }, g.error ? "error" : g.finishReason || ""),
               ),
             ),

@@ -154,3 +154,68 @@ export async function deleteCacheEntry(name, url) {
   if (describeCache(name).readOnly) throw new Error("Website files can't be deleted here.");
   await (await caches.open(name)).delete(url);
 }
+
+// ---------- breakdown: how much each part of the app stores ----------
+// Returns {usage, quota, parts: [{group, label, bytes, source}]}, biggest first.
+// group: "Models" (one row per downloaded model), "Your data", "Offline copies".
+export async function breakdown(catalog, scanModelCache) {
+  const parts = [];
+  // Models, one row each (from WebLLM's cache records).
+  if (catalog) {
+    try {
+      const scan = await scanModelCache(catalog);
+      for (const m of catalog.all) {
+        const b = scan.byModel[m.id];
+        if (b && b.bytes) parts.push({ group: "Models", label: m.label, bytes: b.bytes, source: "Downloaded from Hugging Face" });
+      }
+      if (scan.other.bytes) parts.push({ group: "Models", label: "Leftover model files", bytes: scan.other.bytes, source: "Not used by any listed model" });
+    } catch {
+      /* no OPFS */
+    }
+  }
+  // Your data in OPFS (everything except the model store).
+  const seen = new Set();
+  for (const [path, label, source] of LABELS) {
+    if (path === "tvmjs-opfs-store") continue;
+    try {
+      let bytes;
+      if (path.endsWith(".json")) {
+        const parts2 = path.split("/");
+        const name = parts2.pop();
+        const dir = await getDir(parts2.join("/"), false);
+        bytes = (await (await dir.getFileHandle(name)).getFile()).size;
+      } else bytes = (await dirSize(path)).bytes;
+      seen.add(path);
+      if (bytes) parts.push({ group: "Your data", label, bytes, source });
+    } catch {
+      /* doesn't exist */
+    }
+  }
+  // Cache Storage, grouped by kind.
+  if ("caches" in globalThis) {
+    const sums = {};
+    for (const name of await caches.keys()) {
+      const d = describeCache(name);
+      const c = await caches.open(name);
+      let bytes = 0;
+      for (const req of await c.keys()) {
+        const res = await c.match(req);
+        if (res) bytes += (await res.clone().blob()).size;
+      }
+      const key = d.label;
+      sums[key] = sums[key] || { group: "Offline copies", label: key, bytes: 0, source: d.source };
+      sums[key].bytes += bytes;
+    }
+    parts.push(...Object.values(sums).filter((p) => p.bytes));
+  }
+  let usage = null;
+  let quota = null;
+  try {
+    const e = await navigator.storage.estimate();
+    usage = e.usage;
+    quota = e.quota;
+  } catch {
+    /* ignore */
+  }
+  return { usage, quota, parts: parts.sort((a, b) => b.bytes - a.bytes) };
+}

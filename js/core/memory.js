@@ -35,7 +35,9 @@ function info(llm) {
     id: llm.id,
     modelId: llm.modelId,
     label: llm.model ? llm.model.label : null,
-    mb: llm.modelId ? estimateMB(llm.model, llm.contextWindow) : 0,
+    // Measured in the engine's worker when available, otherwise estimated.
+    mb: llm.modelId ? (llm.gpu && llm.gpu.bytes ? Math.round(llm.gpu.bytes / 1048576) : estimateMB(llm.model, llm.contextWindow)) : 0,
+    measured: !!(llm.gpu && llm.gpu.bytes),
     lastUsed: llm.lastUsed || 0,
     busy: llm.state === "generating" || llm.state === "loading",
     title: document.title,

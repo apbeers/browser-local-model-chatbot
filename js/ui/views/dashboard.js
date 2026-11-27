@@ -6,6 +6,7 @@ import { h, toast, fmtNum, fmtMs, downloadFile, pickFile } from "../dom.js";
 import { colorVar, disposeCharts } from "../charts.js";
 import { renderCharts } from "./dashboard-charts.js";
 import { renderTables } from "./dashboard-tables.js";
+import { renderMemory } from "./dashboard-memory.js";
 
 const { loadAllSessions, exportSessions, importBundle, median, percentile } = app.stats;
 
@@ -96,6 +97,7 @@ export async function render(root) {
   );
   if (!all.length) {
     page.append(h("div", { class: "card" }, "No sessions recorded yet. Load a model and chat, or run a benchmark. Every reply is logged here."));
+    renderMemory(page, { filtered: [] });
     return;
   }
 
@@ -158,6 +160,10 @@ export async function render(root) {
       kpi("Load from storage", fmtMs(median(cachedLoads)), `${cachedLoads.length} loads`),
       kpi("Load + download", fmtMs(median(dlLoads)), `${dlLoads.length} loads`),
       kpi("Failures", fmtNum(failures, 0), "failed loads + errors"),
+      kpi("Peak GPU memory", (() => {
+        const v = median(gens.map((g) => g.gpuPeakMB).filter(Boolean));
+        return v ? `${fmtNum(v, 0)} <small>MB</small>` : "–";
+      })(), "median while replying (measured)"),
     ),
   );
 
@@ -168,6 +174,7 @@ export async function render(root) {
   const modelOrder = [...catalogOrder.filter((l) => present.includes(l)), ...present.filter((l) => !catalogOrder.includes(l))];
   const modelColor = (label) => colorVar(Math.max(0, modelOrder.indexOf(label)));
 
+  renderMemory(page, { filtered });
   renderCharts(page, { gens, loaded, modelOrder, modelColor });
   renderTables(page, { filtered, gensOf, rerender, state });
 }

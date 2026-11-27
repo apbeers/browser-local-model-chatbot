@@ -29,6 +29,7 @@ export class LLM extends EventTarget {
     this.lastHistoryKey = null;
     this.kvTokens = 0;
     this.id = crypto.randomUUID ? crypto.randomUUID() : String(Math.random());
+    this.gpu = { bytes: 0, peak: 0, buffers: 0 };
     this.lastUsed = 0;
     memory.attach(this); // share GPU memory with other open windows
     memory.unloadWhenHidden(this);
@@ -126,6 +127,10 @@ export class LLM extends EventTarget {
     try {
       if (!this.engine) {
         this.worker = new Worker(new URL("./llm-worker.js", import.meta.url), { type: "module" });
+        // Exact GPU memory: the worker counts every GPU buffer and reports here.
+        const ch = new MessageChannel();
+        ch.port1.onmessage = (e) => this._gpuReport(e.data);
+        this.worker.postMessage({ __gpuMemPort: ch.port2 }, [ch.port2]);
         this.engine = await lib.CreateWebWorkerMLCEngine(
           this.worker,
           modelId,
@@ -137,6 +142,11 @@ export class LLM extends EventTarget {
         await this.engine.reload(modelId, chatOpts);
       }
       await session.loaded();
+      // Measured GPU memory after loading (reports arrive a moment later).
+      setTimeout(() => {
+        session.r.load.gpuMB = Math.round(this.gpu.bytes / 1048576);
+        session.saveNow();
+      }, 800);
       touchModel(modelId).catch(() => {});
       this.modelId = modelId;
       this.contextWindow = contextWindow;
@@ -165,6 +175,15 @@ export class LLM extends EventTarget {
     }
     this.worker = null;
     this.engine = null;
+    this._gpuReport({ bytes: 0, peak: 0, buffers: 0 });
+  }
+
+  // {bytes, peak, buffers}: GPU memory used by this window's engine, measured in its worker.
+  _gpuReport(d) {
+    this.gpu = d;
+    this.emit("gpu-memory", d);
+    clearTimeout(this._gpuAnnounce);
+    this._gpuAnnounce = setTimeout(() => memory.announce(this), 500);
   }
 
   // opts.reason: shown to the user when the model was unloaded automatically.
@@ -199,6 +218,7 @@ export class LLM extends EventTarget {
   async generate(messages, { onToken, conversationId, projectId, maxTokens, request, kind, meta } = {}) {
     if (!this.engine || !this.modelId) throw new Error("No model loaded");
     this.lastUsed = Date.now();
+    if (this.worker) this.worker.postMessage({ __gpuMemResetPeak: true }); // measure this reply's peak
     this.setState("generating");
     this.interrupted = false;
     let msgs = messages;
@@ -309,6 +329,8 @@ export class LLM extends EventTarget {
       finishReason: this.interrupted ? "interrupted" : finishReason,
       maxTokens: req.max_tokens || null,
       kind: kind || "chat",
+      gpuMB: Math.round(this.gpu.bytes / 1048576),
+      gpuPeakMB: Math.round(this.gpu.peak / 1048576),
       projectId: projectId || null,
       temperature: req.temperature ?? null,
     };

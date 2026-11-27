@@ -155,7 +155,7 @@ export function hBarChart(container, rows, { unit = "", color = colorVar(0) } = 
         svg.append(s("line", { x1: x(r.lo), x2: x(r.hi), y1: cy, y2: cy, style: ws }));
         for (const v of [r.lo, r.hi]) svg.append(s("line", { x1: x(v), x2: x(v), y1: cy - 4, y2: cy + 4, style: ws }));
       }
-      svg.append(s("text", { x: Math.max(x(r.value || 0), r.hi != null ? x(r.hi) : 0) + 6, y: cy + 4, class: "value-label" }, fmtTick(+(r.value || 0).toFixed(1)) + unit));
+      svg.append(s("text", { x: Math.max(x(r.value || 0), r.hi != null ? x(r.hi) : 0) + 6, y: cy + 4, class: "value-label" }, r.valueLabel ?? fmtTick(+(r.value || 0).toFixed(1)) + unit));
       const hit = s("rect", { x: 0, y, width: W, height: rowH, class: "hit" });
       hit.addEventListener("pointermove", (e) => r.tip && showTip(e, r.tip));
       hit.addEventListener("pointerleave", hideTip);
