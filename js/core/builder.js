@@ -26,10 +26,10 @@ export function builderContextWindow() {
   return mem >= 8 ? 16384 : 8192;
 }
 
-// Extra load options for the coding model: smaller prefill chunks on phones
-// need less GPU memory at once when a long prompt is processed.
+// Load options for the coding model (WebLLM fixes the prefill chunk size per
+// model build, so only the context size can be changed).
 export function builderLoadOptions() {
-  return isMobile() ? { contextWindow: builderContextWindow(), prefillChunk: 512 } : { contextWindow: builderContextWindow() };
+  return { contextWindow: builderContextWindow() };
 }
 
 // Automatic choice: 1.5B on phones and tablets, 7B on desktops with a

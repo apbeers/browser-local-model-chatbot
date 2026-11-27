@@ -16,42 +16,68 @@ const sizes = new WeakMap();
 
 function report() {
   if (!port || timer) return;
+  // (errors in reporting are ignored: measuring must never break the engine)
   timer = setTimeout(() => {
     timer = null;
     port.postMessage({ bytes, peak, buffers });
   }, 200);
 }
 
+// Wraps a WebGPU method; never lets measuring break the engine. If the
+// browser won't let us wrap it, measuring is simply off (the app then uses estimates).
+function wrap(proto, name, makeWrapper) {
+  try {
+    const original = proto[name];
+    if (typeof original !== "function") return false;
+    const wrapped = makeWrapper(original);
+    Object.defineProperty(proto, name, { value: wrapped, writable: true, configurable: true });
+    return proto[name] === wrapped;
+  } catch {
+    return false;
+  }
+}
+
 if (self.GPUDevice && self.GPUBuffer) {
-  const create = GPUDevice.prototype.createBuffer;
-  GPUDevice.prototype.createBuffer = function (desc) {
-    const buf = create.call(this, desc);
-    const size = Number(desc && desc.size) || 0;
-    sizes.set(buf, size);
-    bytes += size;
-    buffers++;
-    if (bytes > peak) peak = bytes;
-    report();
-    return buf;
-  };
-  const destroy = GPUBuffer.prototype.destroy;
-  GPUBuffer.prototype.destroy = function () {
-    const size = sizes.get(this);
-    if (size !== undefined) {
-      sizes.delete(this);
-      bytes -= size;
-      buffers--;
+  wrap(GPUDevice.prototype, "createBuffer", (create) =>
+    function (desc) {
+      const buf = create.call(this, desc);
+      try {
+        const size = Number(desc && desc.size) || 0;
+        sizes.set(buf, size);
+        bytes += size;
+        buffers++;
+        if (bytes > peak) peak = bytes;
+        report();
+      } catch {
+        /* measuring only */
+      }
+      return buf;
+    },
+  );
+  wrap(GPUBuffer.prototype, "destroy", (destroy) =>
+    function () {
+      try {
+        const size = sizes.get(this);
+        if (size !== undefined) {
+          sizes.delete(this);
+          bytes -= size;
+          buffers--;
+          report();
+        }
+      } catch {
+        /* measuring only */
+      }
+      return destroy.call(this);
+    },
+  );
+  wrap(GPUDevice.prototype, "destroy", (destroyDevice) =>
+    function () {
+      bytes = 0;
+      buffers = 0;
       report();
-    }
-    return destroy.call(this);
-  };
-  const destroyDevice = GPUDevice.prototype.destroy;
-  GPUDevice.prototype.destroy = function () {
-    bytes = 0;
-    buffers = 0;
-    report();
-    return destroyDevice.call(this);
-  };
+      return destroyDevice.call(this);
+    },
+  );
 }
 
 const handler = new WebWorkerMLCEngineHandler();

@@ -60,16 +60,10 @@ export class LLM extends EventTarget {
       await this.session.end();
       this.session = null;
     }
-    // Start from a fresh worker so the previous model's GPU memory is fully released.
-    if (this.engine) {
-      try {
-        await this.engine.unload();
-      } catch {
-        /* ignore */
-      }
-      this.destroyWorker();
-      this.modelId = null;
-    }
+    // Switching models reuses the engine: WebLLM unloads the old model and frees
+    // its GPU buffers right away. (A fresh worker would free them only when the
+    // browser cleans up the old one, which Safari can delay, briefly holding two models.)
+    this.modelId = null;
     this.setState("loading");
     this.modelId = null;
     this.model = model;
@@ -116,7 +110,6 @@ export class LLM extends EventTarget {
     if (freed.length) this.emit("freed-memory", { models: freed });
     let chatOpts;
     if (opts.contextWindow) chatOpts = { context_window_size: opts.contextWindow };
-    if (opts.prefillChunk) chatOpts = { ...(chatOpts || {}), prefill_chunk_size: opts.prefillChunk };
     const contextWindow = opts.contextWindow || model.contextWindow;
     session.r.model.contextWindow = contextWindow;
     const onProgress = (report) => {
@@ -229,7 +222,9 @@ export class LLM extends EventTarget {
         result.droppedMessages = dropped;
         this.setState("ready");
         return result;
-      } catch (err) {
+      } catch (caught) {
+        // WebLLM can reject with a plain string; make it a real Error so it can be tagged.
+        const err = caught instanceof Error ? caught : new Error(errText(caught));
         const msg = errText(err);
         const ctxErr = /context ?window|exceed/i.test(msg);
         if (ctxErr && attempt < 6 && msgs.length > 2) {
