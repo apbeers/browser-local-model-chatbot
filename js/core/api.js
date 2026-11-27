@@ -25,6 +25,7 @@ import * as tools from "./tools.js";
 import * as usage from "./usage.js";
 import * as storage from "./storage.js";
 import * as memory from "./memory.js";
+import * as timeline from "./timeline.js";
 import * as install from "./install.js";
 import * as device from "./device.js";
 import { findModel, GROUP_LABELS } from "./catalog.js";
@@ -78,6 +79,8 @@ export const app = {
   storage,
   /** GPU memory sharing between windows: budgetMB(), estimateMB(model, ctx), loadedElsewhere(). */
   memory,
+  /** Memory/crash timeline: read({from, to}), lastCrash(), logCrash(kind, msg), clear(). */
+  timeline,
   install,
   device,
   opfsAvailable,
@@ -95,6 +98,7 @@ export const app = {
   async init() {
     install.initInstall();
     usage.attach(app);
+    llm.addEventListener("gpu-lost", (e) => app.handleOutOfMemory(e.detail));
     themes.restoreTheme().catch(() => {});
     try {
       app.catalog = await llm.init();
@@ -163,6 +167,31 @@ export const app = {
     } catch {
       /* ignore */
     }
+  },
+
+  /**
+   * The GPU ran out of memory: remember which model did it (Auto avoids it
+   * next time), unload every model in every window to get performance back,
+   * and fire "out-of-memory" so the UI can explain what happened.
+   */
+  async handleOutOfMemory({ model, message, during } = {}) {
+    const now = Date.now();
+    if (app._lastOom && now - app._lastOom < 5000) return; // one event per incident
+    app._lastOom = now;
+    try {
+      if (model) {
+        const s = await retention.getSettings();
+        const oom = { ...(s.oomModels || {}) };
+        oom[model.id] = { at: now, count: ((oom[model.id] && oom[model.id].count) || 0) + 1 };
+        await retention.setSetting("oomModels", oom);
+      }
+      if (llm.modelId) await llm.unload({ reason: "Unloaded after running out of GPU memory." });
+      memory.unloadAllElsewhere("Another window ran out of GPU memory, so all models were unloaded to recover.");
+      usage.log("out-of-memory", { model: model && model.id, during });
+    } catch (e) {
+      console.warn("out-of-memory handling failed", e);
+    }
+    app.emit("out-of-memory", { at: now, model, message, during });
   },
 
   /** Makes sure some model is loaded (the one picked in the chat dropdown). */

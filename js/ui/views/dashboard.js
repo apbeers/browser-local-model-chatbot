@@ -7,6 +7,7 @@ import { colorVar, disposeCharts } from "../charts.js";
 import { renderCharts } from "./dashboard-charts.js";
 import { renderTables } from "./dashboard-tables.js";
 import { renderMemory } from "./dashboard-memory.js";
+import { renderTimeline, setTimelineFocus } from "./dashboard-timeline.js";
 
 const { loadAllSessions, exportSessions, importBundle, median, percentile } = app.stats;
 
@@ -34,7 +35,9 @@ function kindOf(g) {
   return k;
 }
 
-export async function render(root) {
+// args: ["timeline", <time>] centers the memory timeline on that moment.
+export async function render(root, args = []) {
+  if (args[0] === "timeline" && args[1]) setTimelineFocus(Number(args[1]));
   disposeCharts();
   const page = h("div", { class: "page" });
   root.replaceChildren(page);
@@ -98,6 +101,7 @@ export async function render(root) {
   if (!all.length) {
     page.append(h("div", { class: "card" }, "No sessions recorded yet. Load a model and chat, or run a benchmark. Every reply is logged here."));
     renderMemory(page, { filtered: [] });
+    await renderTimeline(page);
     return;
   }
 
@@ -175,6 +179,7 @@ export async function render(root) {
   const modelColor = (label) => colorVar(Math.max(0, modelOrder.indexOf(label)));
 
   renderMemory(page, { filtered });
+  await renderTimeline(page);
   renderCharts(page, { gens, loaded, modelOrder, modelColor });
   renderTables(page, { filtered, gensOf, rerender, state });
 }

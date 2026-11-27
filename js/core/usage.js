@@ -24,7 +24,18 @@ export function log(e, details = {}) {
   timer = setTimeout(flush, 5000);
 }
 
-export async function flush() {
+// Writes run one at a time: each appends to the file it just read, so two at
+// once would lose lines.
+// Other windows append to the same file too, so a Web Lock serializes writes
+// across every open window of the app (falls back to this window only).
+let writing = Promise.resolve();
+const locked = (fn) => (navigator.locks ? navigator.locks.request("usage-write", fn) : fn());
+export function flush() {
+  writing = writing.then(() => locked(flushNow), () => locked(flushNow));
+  return writing;
+}
+
+async function flushNow() {
   if (!buffer.length) return;
   const batch = buffer;
   buffer = [];
@@ -117,7 +128,8 @@ export function attach(app) {
     if (event) log(event, rest);
   });
   app.llm.addEventListener("loaded", (e) => log("model-load", { model: e.detail.model.id, ms: e.detail.session ? e.detail.session.r.load.totalMs : null }));
-  app.llm.addEventListener("generation", (e) => log("generation", { kind: e.detail.kind, model: app.llm.modelId, tokens: e.detail.completionTokens }));
+  app.llm.addEventListener("generation", (e) => log("generation", { kind: e.detail.kind, model: app.llm.modelId, tokens: e.detail.completionTokens, ms: e.detail.e2eMs }));
+  app.llm.addEventListener("unloaded", (e) => log("model-unload", { model: e.detail.model.id, reason: e.detail.reason }));
   addEventListener("pagehide", () => flush());
   addEventListener("visibilitychange", () => document.visibilityState === "hidden" && flush());
 }

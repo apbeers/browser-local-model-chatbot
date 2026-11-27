@@ -2080,6 +2080,10 @@ dialog:has(.preview-frame) {
   .ws[data-tab="chat"] .ws-chat {
     display: flex;
   }
+  /* The (empty) tab area shares the chat's grid cell: hide it so it can't block taps. */
+  .ws[data-tab="chat"] .ws-body {
+    display: none;
+  }
   .ws-tabs {
     border-top: 1px solid var(--border);
     border-bottom: 0;
@@ -2347,4 +2351,11 @@ dialog:has(.preview-frame) {
   .mem-grid {
     grid-template-columns: 1fr;
   }
+}
+.tl-crash td {
+  color: var(--critical-ink);
+  background: rgba(208, 59, 59, 0.07);
+}
+.oom-dialog .kv {
+  margin: 10px 0;
 }

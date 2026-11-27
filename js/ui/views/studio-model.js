@@ -8,7 +8,8 @@ export async function prepareBuilder(onStatus = () => {}) {
     onStatus("This browser has no WebGPU, so the coding model can't run here.");
     return false;
   }
-  const id = app.builder.pickBuilderModel(app.gpu, (await app.settings.get()).coderModel);
+  const s = await app.settings.get();
+  const id = app.builder.pickBuilderModel(app.gpu, s.coderModel, s.oomModels);
   const ctx = app.builder.builderContextWindow();
   if (app.llm.modelId === id && app.llm.contextWindow === ctx) return true;
   const off = app.on("load-progress", (r) => onStatus(`Loading the coding model… ${Math.round((r.progress || 0) * 100)}%`));

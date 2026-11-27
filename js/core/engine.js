@@ -6,6 +6,10 @@ import { Session, errText } from "./stats.js";
 import { scanModelCache, cacheInfo } from "./models.js";
 import { touchModel } from "./retention.js";
 import * as memory from "./memory.js";
+import * as timeline from "./timeline.js";
+
+// Messages that mean the GPU dropped the model (usually out of memory).
+export const GPU_LOST = /device (was )?lost|GPUDevice|Instance (reference|dropped)|external Instance|already been disposed|out of memory|OutOfMemory|allocation failed/i;
 
 const WINDOW = 16; // tokens per throughput window (for throttling curves)
 
@@ -33,6 +37,7 @@ export class LLM extends EventTarget {
     this.lastUsed = 0;
     memory.attach(this); // share GPU memory with other open windows
     memory.unloadWhenHidden(this);
+    timeline.attach(this); // memory/crash timeline for the stats dashboard
   }
 
   emit(type, detail) {
@@ -43,6 +48,7 @@ export class LLM extends EventTarget {
     this.state = s;
     this.emit("state", s);
     memory.announce(this);
+    timeline.sampleMemory(this);
   }
 
   async init() {
@@ -148,8 +154,15 @@ export class LLM extends EventTarget {
       this.lastUsed = Date.now();
       this.setState("ready");
       this.emit("loaded", { model, session });
-    } catch (err) {
+    } catch (caught) {
+      const err = caught instanceof Error ? caught : new Error(errText(caught));
       await session.loadFailed(err);
+      const lost = GPU_LOST.test(errText(err));
+      timeline.logCrash(lost ? "out-of-memory" : "load-failed", `Loading ${model.label}: ${errText(err)}`, this);
+      if (lost) {
+        err.gpuLost = true;
+        this.emit("gpu-lost", { model, message: errText(err), during: "load" });
+      }
       this.session = null;
       this.modelId = null;
       // A failed reload can leave the engine unusable; start fresh next time.
@@ -175,6 +188,7 @@ export class LLM extends EventTarget {
   _gpuReport(d) {
     this.gpu = d;
     this.emit("gpu-memory", d);
+    timeline.sampleMemory(this);
     clearTimeout(this._gpuAnnounce);
     this._gpuAnnounce = setTimeout(() => memory.announce(this), 500);
   }
@@ -195,6 +209,7 @@ export class LLM extends EventTarget {
     this.modelId = null;
     this.model = null;
     this.setState("idle");
+    if (was) this.emit("unloaded", { model: was, reason: opts.reason || "by you" });
     if (opts.reason && was) this.emit("auto-unloaded", { model: was, reason: opts.reason });
   }
 
@@ -237,12 +252,15 @@ export class LLM extends EventTarget {
         if (this.session) await this.session.addError("generate", err);
         // When the GPU drops the model (often out of memory on phones), WebLLM tears it
         // down and the running request fails with "...has already been disposed".
-        if (/device (was )?lost|GPUDevice|Instance (reference|dropped)|external Instance|already been disposed/i.test(msg)) {
+        if (GPU_LOST.test(msg)) {
           err.gpuLost = true;
+          timeline.logCrash("out-of-memory", `${this.model ? this.model.label : "Model"} while replying (${kind || "chat"}): ${msg}`, this);
+          this.emit("gpu-lost", { model: this.model, message: msg, during: kind || "chat" });
           this.destroyWorker();
           this.modelId = null;
           this.setState("error");
         } else {
+          timeline.logCrash("reply-failed", `${this.model ? this.model.label : "Model"}: ${msg}`, this);
           this.setState("ready");
         }
         throw err;

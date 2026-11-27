@@ -72,6 +72,14 @@ app.loadModel = async (modelId) => {
 
 app.llm.addEventListener("auto-unloaded", (e) => toast(`${e.detail.model.label} was unloaded to free memory; it loads again when the app needs it.`));
 
+app.on("out-of-memory", ({ at, model }) => {
+  const c = card(
+    text(`${model ? model.label : "The model"} ran out of GPU memory, so all models were unloaded to get performance back.`),
+    button("See what happened", () => (location.href = new URL(`./#/dashboard/timeline/${at}`, document.baseURI).href), true),
+    button("Dismiss", () => c.remove()),
+  );
+});
+
 function installHint() {
   if (app.install.isStandalone()) return;
   try {

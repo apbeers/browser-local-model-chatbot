@@ -207,6 +207,7 @@ export async function render(root) {
     card(
       chk("usageLog", "Log which features I use (stored only on this device; never message text)"),
       chk("usageTopics", "Also label each chat's topic in 1–3 words (made on this device)"),
+      chk("timelineLog", "Record GPU memory and crashes over time (the memory timeline on the Stats dashboard, kept 30 days)"),
       usageSummary,
       h(
         "div",

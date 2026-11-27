@@ -33,29 +33,44 @@ export function builderLoadOptions() {
 }
 
 // Automatic choice: 1.5B on phones and tablets, 7B on desktops with a
-// discrete NVIDIA/AMD GPU, 3B on other computers.
-export function autoBuilderModel(gpu) {
-  if (isMobile()) return f32(CODER_MODELS[1], gpu);
-  const vendor = ((gpu && gpu.vendor) || "").toLowerCase();
-  const discrete = /nvidia|amd/.test(vendor) && !/integrated/.test(((gpu && gpu.description) || "").toLowerCase());
-  return f32(discrete ? CODER_MODELS[3] : CODER_MODELS[2], gpu);
+// discrete NVIDIA/AMD GPU, 3B on other computers. Models that ran out of GPU
+// memory on this device (oomModels setting) are skipped for the next smaller one.
+export function autoBuilderModel(gpu, oomModels = {}) {
+  let i;
+  if (isMobile()) i = 1;
+  else {
+    const vendor = ((gpu && gpu.vendor) || "").toLowerCase();
+    const discrete = /nvidia|amd/.test(vendor) && !/integrated/.test(((gpu && gpu.description) || "").toLowerCase());
+    i = discrete ? 3 : 2;
+  }
+  while (i > 0 && oomModels[f32(CODER_MODELS[i], gpu)]) i--;
+  return f32(CODER_MODELS[i], gpu);
 }
 
 // setting: the "coderModel" setting ("auto" or a model id).
-export function pickBuilderModel(gpu, setting = "auto") {
-  return setting && setting !== "auto" ? setting : autoBuilderModel(gpu);
+export function pickBuilderModel(gpu, setting = "auto", oomModels = {}) {
+  return setting && setting !== "auto" ? setting : autoBuilderModel(gpu, oomModels);
 }
 
 // Options for the Studio model menu: [{id, label, note}].
-export function coderOptions(catalog, gpu) {
-  const auto = autoBuilderModel(gpu);
+export function coderOptions(catalog, gpu, oomModels = {}) {
+  const auto = autoBuilderModel(gpu, oomModels);
   return CODER_MODELS.map((base) => {
     const id = f32(base, gpu);
     const m = catalog && catalog.all.find((x) => x.id === id);
     const size = (m && m.bytes) || (m && m.vramMB * 1048576 * 0.6);
     const big = /7B/.test(id) ? 3 : /3B/.test(id) ? 2 : /1\.5B/.test(id) ? 1 : 0;
-    const note = id === auto ? "recommended for this device" : big > (isMobile() ? 1 : 2) ? "slow here, may run out of memory" : big < 1 ? "fastest, weakest" : "";
-    return { id, label: (m && m.label) || id, bytes: size || null, vramMB: m ? m.vramMB : null, note };
+    const oom = oomModels[id];
+    const note = oom
+      ? `ran out of memory here ${oom.count > 1 ? oom.count + " times" : "before"}`
+      : id === auto
+        ? "recommended for this device"
+        : big > (isMobile() ? 1 : 2)
+          ? "slow here, may run out of memory"
+          : big < 1
+            ? "fastest, weakest"
+            : "";
+    return { id, label: (m && m.label) || id, bytes: size || null, vramMB: m ? m.vramMB : null, note, oom: !!oom };
   });
 }
 
@@ -84,7 +99,8 @@ export async function fileIndex() {
 
 // Make sure the builder model is loaded with a large enough context window.
 export async function ensureBuilder(app) {
-  const id = pickBuilderModel(app.gpu, (await app.settings.get()).coderModel);
+  const s = await app.settings.get();
+  const id = pickBuilderModel(app.gpu, s.coderModel, s.oomModels);
   const ctx = builderContextWindow();
   if (app.llm.modelId !== id || app.llm.contextWindow !== ctx) await app.llm.load(id, builderLoadOptions());
   return { id, ctx, model: findModel(app.catalog, id) };

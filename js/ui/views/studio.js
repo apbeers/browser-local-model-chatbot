@@ -6,6 +6,7 @@ import { h, toast, confirmDialog, promptDialog, relTime, modal } from "../dom.js
 import { workspace } from "../studio/workspace.js";
 import { appAdapter, uiAdapter } from "../studio/adapters.js";
 import { pinApp } from "../studio/pin.js";
+import { coderModelSelect } from "../studio/model-select.js";
 
 const V = () => app.variants;
 const pendingRequest = new Map(); // app id -> first request to send when the workspace opens
@@ -78,6 +79,8 @@ async function home(root) {
       },
       h("h3", { class: "card-title" }, "What do you want to build?"),
       ask,
+      h("label", { class: "field", style: "margin:10px 0 0" }, h("span", null, "Coding model"), coderModelSelect({ id: "studio-coder" }).el),
+      h("p", { class: "note", style: "margin-top:4px" }, "Bigger models write better code but need more memory. If a model crashed here before it's marked ⚠ and Auto skips it."),
       h("div", { class: "row", style: "margin-top:10px" }, h("button", { class: "btn btn-primary" }, "Build it"), h("span", { class: "note" }, "The agent plans it, writes a draft and tests it. You keep it or throw it away.")),
     ),
   );

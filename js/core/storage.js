@@ -15,6 +15,7 @@ const LABELS = [
   ["apps-data", "App data", "Data saved by your Studio apps"],
   ["app/ui", "Custom UIs", "Your custom versions of this app"],
   ["app/usage", "Usage log", "Which features you use (no message text)"],
+  ["app/timeline", "Memory timeline", "GPU memory per model and crashes over time (30 days)"],
   ["app/themes.json", "Themes", "Your color themes"],
   ["app/settings.json", "Settings", "Your settings"],
   ["app/device.json", "Device name", "The name used in stats"],

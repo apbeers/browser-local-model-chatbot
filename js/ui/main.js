@@ -4,7 +4,7 @@
 import { app } from "../core/api.js";
 import { state, $, lsGet, lsSet } from "./state.js";
 import { buildLayout, setSidebar } from "./layout.js";
-import { toast } from "./dom.js";
+import { toast, h, modal } from "./dom.js";
 import { installCopyHandler } from "./markdown.js";
 import { initSidebar, renderSidebar } from "./sidebar.js";
 import { initChatView, showChat, showBanner } from "./chat/chat-view.js";
@@ -90,6 +90,48 @@ async function updateFoot() {
 }
 app.on("models-changed", updateFoot);
 
+// The GPU ran out of memory: everything was unloaded (see app.handleOutOfMemory).
+// Explain it, and offer the stats page centered on the moment it happened.
+let oomDialog = null;
+function showOutOfMemory({ at, model, message, during }) {
+  if (oomDialog && oomDialog.open) return;
+  const where = during === "load" ? "while loading it" : during && during.startsWith("builder") ? "while Studio was building" : "while it was replying";
+  oomDialog = modal(
+    "Ran out of GPU memory",
+    h(
+      "div",
+      { class: "oom-dialog" },
+      h("p", { style: "margin-top:0" }, `${model ? model.label : "A model"} used more GPU memory than this device allows ${where}. To get performance back, every model in every window was unloaded.`),
+      h(
+        "dl",
+        { class: "kv" },
+        h("dt", null, "When"),
+        h("dd", null, new Date(at).toLocaleTimeString()),
+        h("dt", null, "Error"),
+        h("dd", { class: "mono" }, String(message || "").slice(0, 200)),
+      ),
+      h("p", { class: "note" }, "Try a smaller model, a shorter conversation, or closing other tabs and apps. In Studio this model is now marked ⚠ and Auto will skip it."),
+      h(
+        "div",
+        { class: "row", style: "justify-content:flex-end;margin-top:14px" },
+        h("button", { class: "btn", type: "button", onclick: () => oomDialog.close() }, "Dismiss"),
+        h(
+          "button",
+          {
+            class: "btn btn-primary",
+            type: "button",
+            onclick: () => {
+              oomDialog.close();
+              location.hash = `#/dashboard/timeline/${at}`;
+            },
+          },
+          "See what happened",
+        ),
+      ),
+    ),
+  );
+}
+
 async function start() {
   buildLayout(document.getElementById("root"));
   bindChrome();
@@ -109,6 +151,7 @@ async function start() {
     lsSet("uiRolledBack", "0");
     showBanner("Your custom UI didn't start last time, so the default UI is back. Fix or switch UIs in Studio.", true);
   }
+  app.on("out-of-memory", showOutOfMemory);
   app.on("auto-deleted", ({ models, chats }) => {
     const parts = [];
     if (models.length) parts.push(`${models.length} model(s)`);

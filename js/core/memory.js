@@ -61,6 +61,10 @@ export function attach(llm) {
         const w = waiters.get(m.id);
         if (w) w();
       }
+    } else if (m.type === "unload-all") {
+      if (!llm.modelId) return;
+      if (llm.state === "generating") await llm.interrupt();
+      await llm.unload({ reason: m.reason || "All models were unloaded to recover GPU memory." });
     } else if (m.type === "unload" && m.target === llm.id) {
       if (llm.state === "generating" || llm.state === "loading") return announce(llm); // busy: keep it
       await llm.unload({ reason: m.reason || "Unloaded to free GPU memory for another window." });
@@ -111,3 +115,9 @@ export function unloadWhenHidden(llm, minutes = 2) {
 }
 
 export const loadedElsewhere = () => [...peers.values()].filter((p) => p.modelId && (!self || p.id !== self.id));
+
+// After running out of GPU memory: every other window unloads its model too.
+export function unloadAllElsewhere(reason) {
+  if (channel) channel.postMessage({ type: "unload-all", reason });
+  peers.clear();
+}

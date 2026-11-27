@@ -4,6 +4,7 @@
 import { app } from "../../core/api.js";
 import { h, toast } from "../dom.js";
 import { prepareBuilder } from "../views/studio-model.js";
+import { coderModelSelect } from "./model-select.js";
 
 const ICON = { running: "◌", done: "✓", error: "!" };
 
@@ -14,20 +15,10 @@ export function agentPanel(panel, ws, { initialRequest } = {}) {
   const msgs = h("div", { class: "ag-msgs", "aria-live": "polite" });
   const input = h("textarea", { class: "input ag-input", rows: 3, placeholder: a.kind === "app" ? "Describe what to build or change…" : "Describe a change to this file…" });
   const sendBtn = h("button", { class: "btn btn-primary", type: "button" }, "Send");
-  const modelSel = h("select", { class: "select ag-model", "aria-label": "Coding model" });
+  const modelPick = coderModelSelect();
+  const modelSel = modelPick.el;
   const fileSel = h("select", { class: "select", "aria-label": "File to change", hidden: a.kind !== "ui" });
-
-  async function fillModels() {
-    const s = await app.settings.get();
-    const opts = app.builder.coderOptions(app.catalog, app.gpu);
-    const auto = opts.find((o) => o.id === app.builder.autoBuilderModel(app.gpu));
-    modelSel.replaceChildren(
-      h("option", { value: "auto" }, `Auto · ${auto ? auto.label : "by device"}`),
-      ...opts.map((o) => h("option", { value: o.id, selected: s.coderModel === o.id ? true : null }, `${app.isSaved(app.models.findModel(app.catalog, o.id) || {}) ? "✓ " : ""}${o.label}${o.bytes ? " · " + app.models.fmtBytes(o.bytes) : ""}${o.note ? " · " + o.note : ""}`)),
-    );
-    if (s.coderModel === "auto") modelSel.value = "auto";
-  }
-  modelSel.onchange = () => app.settings.set("coderModel", modelSel.value);
+  const fillModels = () => modelPick.refresh();
 
   async function fillFiles() {
     if (a.kind !== "ui") return;
@@ -60,6 +51,7 @@ export function agentPanel(panel, ws, { initialRequest } = {}) {
             h("ul", { class: "ag-plan" }, (e.plan.features || []).map((f) => h("li", null, f))),
           );
         } else if (e.type === "step") {
+          if (e.status === "running") app.emit("usage", { event: "studio-step", label: e.label });
           let el = stepEls[e.key];
           if (!el) {
             el = stepEls[e.key] = h("li");
@@ -94,23 +86,16 @@ export function agentPanel(panel, ws, { initialRequest } = {}) {
       card.status("Getting the coding model ready…");
       if (!(await prepareBuilder((s) => card.status(s)))) throw new Error("The coding model isn't available.");
       fillModels();
-      const run = () => a.runAgent(text, { chat: history.slice(-4), path: ws.selectedPath, signal: controller.signal, onEvent: (e) => card.event(e), check: (html) => ws.preview.check(html) });
-      let res;
-      try {
-        res = await run();
-      } catch (err) {
-        if (!err.gpuLost || controller.signal.aborted) throw err;
-        // The GPU dropped the model (usually memory on phones): reload it and try once more.
-        card.status("The GPU ran out of memory and dropped the model. Reloading it and trying again…");
-        if (!(await prepareBuilder((s) => card.status(s)))) throw err;
-        res = await run();
-      }
+      card.status(`Using ${app.llm.model ? app.llm.model.label : "the coding model"}`);
+      // No automatic retry after running out of memory: the same model would likely
+      // crash again. The app unloads everything and explains; pick a smaller model above.
+      const res = await a.runAgent(text, { chat: history.slice(-4), path: ws.selectedPath, signal: controller.signal, onEvent: (e) => card.event(e), check: (html) => ws.preview.check(html) });
       const errs = res.errors || [];
       summary = !res.html ? "I couldn't produce a working version. Try rephrasing or a smaller change." : errs.length ? `Draft ready, but ${errs.length} error(s) remain. Check the Console, ask me to fix them, or edit the file.` : "Draft ready. Look at the Preview, then Keep or Discard it.";
       if (res.plan) summary = `${res.plan.emoji || ""} ${res.plan.name}: ${res.plan.features.join("; ")}. ` + summary;
     } catch (err) {
       summary = err.gpuLost
-        ? "Stopped: the GPU ran out of memory and dropped the model twice. Close other tabs and apps and try again, or pick a smaller coding model above."
+        ? "Stopped: the GPU ran out of memory, so all models were unloaded to recover. Pick a smaller coding model in the menu above (it's marked ⚠ if it crashed here before) and try again."
         : "Stopped: " + (err.message || err);
     } finally {
       controller = null;

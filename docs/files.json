@@ -58,7 +58,7 @@
    "path": "js/ui/main.js",
    "summary": "Entry point: starts the app and switches pages.",
    "doc": "components/main.md",
-   "lines": 128
+   "lines": 171
   },
   {
    "path": "js/ui/dom.js",
@@ -82,7 +82,7 @@
    "path": "js/ui/views/settings.js",
    "summary": "Settings page.",
    "doc": "components/views.md",
-   "lines": 290
+   "lines": 291
   },
   {
    "path": "js/ui/views/models.js",
@@ -100,7 +100,7 @@
    "path": "js/ui/views/dashboard.js",
    "summary": "Stats dashboard: filters and number tiles.",
    "doc": "components/views.md",
-   "lines": 181
+   "lines": 186
   },
   {
    "path": "js/ui/views/dashboard-charts.js",
@@ -124,7 +124,7 @@
    "path": "css/app.css",
    "summary": "All default styles (large: prefer css/custom.css).",
    "doc": "CSS_CLASSES.md",
-   "lines": 2351
+   "lines": 2362
   }
  ]
 }
