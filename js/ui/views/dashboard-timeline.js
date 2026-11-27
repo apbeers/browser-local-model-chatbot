@@ -8,6 +8,8 @@ import { colorVar } from "../charts.js";
 import { timelineChart } from "../timeline-chart.js";
 
 const RANGES = [
+  ["10s", "10 sec", 10000],
+  ["30s", "30 sec", 30000],
   ["10m", "10 min", 10 * 60000],
   ["1h", "1 hour", 3600000],
   ["6h", "6 hours", 6 * 3600000],
@@ -16,6 +18,7 @@ const RANGES = [
 ];
 let rangeKey = "6h";
 let focus = null; // a moment to center on
+let liveTimer = null; // short ranges ending now refresh themselves
 
 const PAGE_NAMES = { chat: "Chat", models: "Models", dashboard: "Stats", benchmark: "Benchmark", studio: "Studio", storage: "Storage", settings: "Settings", run: "an app" };
 
@@ -73,7 +76,7 @@ export async function renderTimeline(page) {
   const bar = h("div", { class: "row", style: "margin-bottom:8px" });
 
   async function draw() {
-    const span = (RANGES.find((r) => r[0] === rangeKey) || RANGES[2])[2];
+    const span = (RANGES.find((r) => r[0] === rangeKey) || RANGES[4])[2];
     // Centered on a moment: show mostly what led up to it.
     const to = focus ? Math.min(Date.now(), focus + span / 4) : Date.now();
     const from = focus ? Math.min(to, focus + span / 4) - span : to - span;
@@ -172,6 +175,14 @@ export async function renderTimeline(page) {
       ),
     );
   }
+
+  // 10 s / 30 s views of "now" redraw every 2 s so they stay live.
+  clearInterval(liveTimer);
+  liveTimer = setInterval(() => {
+    if (!document.body.contains(card)) return clearInterval(liveTimer);
+    const span = (RANGES.find((r) => r[0] === rangeKey) || RANGES[0])[2];
+    if (!focus && span <= 60000 && document.visibilityState === "visible") draw();
+  }, 2000);
 
   card.append(
     h("p", { class: "sub" }, "GPU memory used by each model over time, with what you were doing (dots under the chart) and crashes (red). Hover for details. Kept for 30 days on this device."),

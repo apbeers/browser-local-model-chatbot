@@ -115,12 +115,14 @@ async function prune() {
   for (const e of await list(DIR)) if (e.name.endsWith(".jsonl") && Date.parse(e.name.slice(0, 10)) < cutoff) await remove(`${DIR}/${e.name}`);
 }
 
-// Hooks: page errors count as crashes; keep a sample every 30 s while a model is loaded.
+// Hooks: page errors count as crashes; check memory every 2 s while a model is loaded.
 export function attach(llm) {
   prune().catch(() => {});
   addEventListener("error", (e) => logCrash("page-error", `${e.message || "error"}${e.filename ? ` (${e.filename.split("/").pop()}:${e.lineno})` : ""}`, llm));
   addEventListener("unhandledrejection", (e) => logCrash("page-error", e.reason && e.reason.message ? e.reason.message : e.reason, llm));
-  setInterval(() => llm.modelId && sampleMemory(llm), 30000);
+  // Check every 2 s while a model is loaded (a sample is written only when memory moved
+  // by 16 MB+, the model or state changed, or 30 s passed), so 10 s views have detail.
+  setInterval(() => llm.modelId && sampleMemory(llm), 2000);
   addEventListener("pagehide", () => flush());
   addEventListener("visibilitychange", () => document.visibilityState === "hidden" && flush());
 }
