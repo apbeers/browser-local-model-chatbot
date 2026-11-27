@@ -95,7 +95,7 @@ export function agentPanel(panel, ws, { initialRequest } = {}) {
       if (res.plan) summary = `${res.plan.emoji || ""} ${res.plan.name}: ${res.plan.features.join("; ")}. ` + summary;
     } catch (err) {
       summary = err.gpuLost
-        ? "Stopped: the GPU ran out of memory, so all models were unloaded to recover. Pick a smaller coding model in the menu above (it's marked ⚠ if it crashed here before) and try again."
+        ? "Stopped: the GPU ran out of memory, so all models were unloaded to recover. Send again: next time Studio gives this model half the context (down to 4k, what chat uses), which needs less memory. If it still crashes at 4k it's marked ⚠; pick a smaller model in the menu above."
         : "Stopped: " + (err.message || err);
     } finally {
       controller = null;

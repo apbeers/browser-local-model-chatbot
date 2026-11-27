@@ -20,16 +20,30 @@ const f32 = (id, gpu) => (gpu && gpu.available && !gpu.shaderF16 ? id.replace("q
 // Context for the coding model. Phones get 4k: iOS Safari gives WebGPU little
 // memory and a bigger KV cache can make the GPU drop the model mid-answer.
 // Computers: 16k with 8 GB+ memory, otherwise 8k.
-export function builderContextWindow() {
+// A model that ran out of memory here (oomModels[id].ctx = the context it had)
+// gets half that next time, down to 4k (what chat uses).
+export const MIN_BUILDER_CTX = 4096;
+function deviceContextWindow() {
   if (isMobile()) return 4096;
   const mem = navigator.deviceMemory || 8;
   return mem >= 8 ? 16384 : 8192;
 }
+export function builderContextWindow(modelId, oomModels = {}) {
+  const ctx = deviceContextWindow();
+  const o = modelId && oomModels[modelId];
+  if (!o) return ctx;
+  return Math.max(MIN_BUILDER_CTX, Math.min(ctx, (o.ctx || ctx) / 2));
+}
+// True when a model ran out of memory even at the smallest Studio context.
+export function oomAtMinimum(modelId, oomModels = {}) {
+  const o = oomModels[modelId];
+  return !!o && (o.ctx || deviceContextWindow()) <= MIN_BUILDER_CTX;
+}
 
 // Load options for the coding model (WebLLM fixes the prefill chunk size per
 // model build, so only the context size can be changed).
-export function builderLoadOptions() {
-  return { contextWindow: builderContextWindow() };
+export function builderLoadOptions(modelId, oomModels) {
+  return { contextWindow: builderContextWindow(modelId, oomModels) };
 }
 
 // Automatic choice: 1.5B on phones and tablets, 7B on desktops with a
@@ -43,7 +57,7 @@ export function autoBuilderModel(gpu, oomModels = {}) {
     const discrete = /nvidia|amd/.test(vendor) && !/integrated/.test(((gpu && gpu.description) || "").toLowerCase());
     i = discrete ? 3 : 2;
   }
-  while (i > 0 && oomModels[f32(CODER_MODELS[i], gpu)]) i--;
+  while (i > 0 && oomAtMinimum(f32(CODER_MODELS[i], gpu), oomModels)) i--;
   return f32(CODER_MODELS[i], gpu);
 }
 
@@ -61,8 +75,11 @@ export function coderOptions(catalog, gpu, oomModels = {}) {
     const size = (m && m.bytes) || (m && m.vramMB * 1048576 * 0.6);
     const big = /7B/.test(id) ? 3 : /3B/.test(id) ? 2 : /1\.5B/.test(id) ? 1 : 0;
     const oom = oomModels[id];
+    const k = (n) => Math.round(n / 1024) + "k";
     const note = oom
-      ? `ran out of memory here ${oom.count > 1 ? oom.count + " times" : "before"}`
+      ? oomAtMinimum(id, oomModels)
+        ? `ran out of memory here ${oom.count > 1 ? oom.count + " times" : "before"}`
+        : `ran out of memory at ${k(oom.ctx || deviceContextWindow())} context, now uses ${k(builderContextWindow(id, oomModels))}`
       : id === auto
         ? "recommended for this device"
         : big > (isMobile() ? 1 : 2)
@@ -70,7 +87,7 @@ export function coderOptions(catalog, gpu, oomModels = {}) {
           : big < 1
             ? "fastest, weakest"
             : "";
-    return { id, label: (m && m.label) || id, bytes: size || null, vramMB: m ? m.vramMB : null, note, oom: !!oom };
+    return { id, label: (m && m.label) || id, bytes: size || null, vramMB: m ? m.vramMB : null, note, oom: oomAtMinimum(id, oomModels) };
   });
 }
 
@@ -101,8 +118,8 @@ export async function fileIndex() {
 export async function ensureBuilder(app) {
   const s = await app.settings.get();
   const id = pickBuilderModel(app.gpu, s.coderModel, s.oomModels);
-  const ctx = builderContextWindow();
-  if (app.llm.modelId !== id || app.llm.contextWindow !== ctx) await app.llm.load(id, builderLoadOptions());
+  const ctx = builderContextWindow(id, s.oomModels);
+  if (app.llm.modelId !== id || app.llm.contextWindow !== ctx) await app.llm.load(id, { contextWindow: ctx });
   return { id, ctx, model: findModel(app.catalog, id) };
 }
 

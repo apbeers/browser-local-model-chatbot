@@ -10,11 +10,11 @@ export async function prepareBuilder(onStatus = () => {}) {
   }
   const s = await app.settings.get();
   const id = app.builder.pickBuilderModel(app.gpu, s.coderModel, s.oomModels);
-  const ctx = app.builder.builderContextWindow();
+  const ctx = app.builder.builderContextWindow(id, s.oomModels);
   if (app.llm.modelId === id && app.llm.contextWindow === ctx) return true;
   const off = app.on("load-progress", (r) => onStatus(`Loading the coding model… ${Math.round((r.progress || 0) * 100)}%`));
   try {
-    const ok = await app.loadModel(id, app.builder.builderLoadOptions());
+    const ok = await app.loadModel(id, { contextWindow: ctx });
     if (!ok) onStatus("The coding model didn't load. Check the message at the top of the Chat page.");
     return ok;
   } finally {

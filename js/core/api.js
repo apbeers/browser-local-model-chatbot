@@ -174,7 +174,7 @@ export const app = {
    * next time), unload every model in every window to get performance back,
    * and fire "out-of-memory" so the UI can explain what happened.
    */
-  async handleOutOfMemory({ model, message, during } = {}) {
+  async handleOutOfMemory({ model, message, during, contextWindow } = {}) {
     const now = Date.now();
     if (app._lastOom && now - app._lastOom < 5000) return; // one event per incident
     app._lastOom = now;
@@ -182,7 +182,10 @@ export const app = {
       if (model) {
         const s = await retention.getSettings();
         const oom = { ...(s.oomModels || {}) };
-        oom[model.id] = { at: now, count: ((oom[model.id] && oom[model.id].count) || 0) + 1 };
+        const prev = oom[model.id] || {};
+        // ctx: the smallest context it ran out of memory at (Studio uses half of it next time).
+        const ctx = Math.min(prev.ctx || Infinity, contextWindow || Infinity);
+        oom[model.id] = { at: now, count: (prev.count || 0) + 1, ...(Number.isFinite(ctx) ? { ctx } : {}) };
         await retention.setSetting("oomModels", oom);
       }
       if (llm.modelId) await llm.unload({ reason: "Unloaded after running out of GPU memory." });

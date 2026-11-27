@@ -19,7 +19,7 @@ A chat app that runs language models **on your device** with WebGPU, measures ho
   - Desktop: agent chat on the left; **Preview** (phone/tablet/desktop/ultrawide sizes), **Files**, **Changes** (diffs, history, undo) and **Console** tabs. Phones: one panel at a time with a bottom tab bar.
   - **Apps** are single-file HTML tools (like artifacts) that run sandboxed. `appkit` gives each one its own storage and files, the on-device model, tools and the theme (light/dark follow the app). 7 starter templates.
   - The agent plans (JSON), writes from the closest template, checks syntax and runs the draft in the preview to catch errors, and fixes them (up to twice). You keep or discard the draft.
-  - Coding model: Qwen2.5-Coder 1.5B on phones, 3B on laptops, 7B on desktops with a discrete GPU, with every size selectable; 8k context on phones, 16k on desktops.
+  - Coding model: Qwen2.5-Coder 1.5B on phones, 3B on laptops, 7B on desktops with a discrete GPU, with every size selectable; 4k context on phones, 8k–16k on computers. If a model runs out of GPU memory, Studio halves its context next time (down to 4k) before giving up on it.
   - **Pin apps to the Home Screen** as their own installable apps that work offline. Each pin carries a packed copy of the app so a fresh iPhone/iPad Home Screen app can set itself up.
   - **Custom chatbot UIs** use the same workspace (drafts previewed before saving).
   - **Customize for me:** turns your usage log into a plan (start page, menu order, hidden pages, example prompts, accent, compact layout) and builds a custom UI from it.
@@ -46,7 +46,7 @@ index.html (locked boot shell + startup watchdog)
 
 ### The coding model
 
-Studio and the theme maker use **Qwen2.5-Coder 1.5B** (about 880 MB, f32 version on GPUs without f16). WebLLM builds it with a 4k context, so the builder loads it with **16k tokens on desktops and 8k on phones**. Because it's a small model, every request gets only:
+Studio and the theme maker use **Qwen2.5-Coder 1.5B** (about 880 MB, f32 version on GPUs without f16). WebLLM builds it with a 4k context, so the builder loads it with **16k tokens on computers with 8 GB+ (8k otherwise) and 4k on phones**, halved for a model that ran out of memory here. Because it's a small model, every request gets only:
 
 1. `docs/STUDIO_RULES.md`: explicit rules (output the whole file, keep exports, use `h()` and CSS variables).
 2. The docs for that one file (`docs/files.json` maps each file to its doc and summary), plus `docs/API.md` and `docs/ARCHITECTURE.md` (or `THEMING.md` and `CSS_CLASSES.md` for styles).

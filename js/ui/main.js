@@ -110,7 +110,7 @@ function showOutOfMemory({ at, model, message, during }) {
         h("dt", null, "Error"),
         h("dd", { class: "mono" }, String(message || "").slice(0, 200)),
       ),
-      h("p", { class: "note" }, "Try a smaller model, a shorter conversation, or closing other tabs and apps. In Studio this model is now marked ⚠ and Auto will skip it."),
+      h("p", { class: "note" }, "Try a smaller model, a shorter conversation, or closing other tabs and apps. In Studio, this model now gets a smaller context next time (down to 4k); if it crashes even then, it's marked ⚠ and Auto skips it."),
       h(
         "div",
         { class: "row", style: "justify-content:flex-end;margin-top:14px" },

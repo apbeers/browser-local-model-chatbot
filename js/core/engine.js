@@ -29,6 +29,8 @@ export class LLM extends EventTarget {
     this.model = null;
     this.session = null;
     this.state = "idle"; // idle | loading | ready | generating | error
+    this.genQueue = Promise.resolve(); // replies run one at a time
+    this.switching = false; // true while load() replaces the model
     this.loadProgress = null;
     this.lastHistoryKey = null;
     this.kvTokens = 0;
@@ -62,6 +64,15 @@ export class LLM extends EventTarget {
     const model = findModel(this.catalog, modelId);
     if (!model) throw new Error("Unknown model " + modelId);
     if (this.state === "loading") throw new Error("A model is already loading");
+    // A reply still running (a chat answer, the chat-topic labeler, an app's request)
+    // would be torn down by the reload and fail with "already been disposed", which
+    // looks like the GPU running out of memory. Stop it and wait for it to end first.
+    this.switching = true;
+    if (this.state === "generating") {
+      await this.interrupt();
+      for (let i = 0; i < 200 && this.state === "generating"; i++) await new Promise((r) => setTimeout(r, 50));
+    }
+    await this.genQueue;
     if (this.session) {
       await this.session.end();
       this.session = null;
@@ -105,6 +116,7 @@ export class LLM extends EventTarget {
         );
         await session.loadFailed(err);
         this.session = null;
+        this.switching = false;
         this.setState("error");
         this.emit("error", err);
         throw err;
@@ -152,16 +164,18 @@ export class LLM extends EventTarget {
       this.lastHistoryKey = null;
       this.kvTokens = 0;
       this.lastUsed = Date.now();
+      this.switching = false;
       this.setState("ready");
       this.emit("loaded", { model, session });
     } catch (caught) {
       const err = caught instanceof Error ? caught : new Error(errText(caught));
       await session.loadFailed(err);
+      this.switching = false;
       const lost = GPU_LOST.test(errText(err));
       timeline.logCrash(lost ? "out-of-memory" : "load-failed", `Loading ${model.label}: ${errText(err)}`, this);
       if (lost) {
         err.gpuLost = true;
-        this.emit("gpu-lost", { model, message: errText(err), during: "load" });
+        this.emit("gpu-lost", { model, message: errText(err), during: "load", contextWindow });
       }
       this.session = null;
       this.modelId = null;
@@ -223,7 +237,14 @@ export class LLM extends EventTarget {
   // messages: [{role, content}] (OpenAI format). onToken(fullText) is called as text streams in.
   // opts.request: extra WebLLM request fields (temperature, max_tokens, response_format, seed…).
   // opts.kind: tag stored with the stats record ("chat", "benchmark", "builder-code", …).
-  async generate(messages, { onToken, conversationId, projectId, maxTokens, request, kind, meta } = {}) {
+  generate(messages, opts = {}) {
+    const run = this.genQueue.then(() => this._generate(messages, opts));
+    this.genQueue = run.catch(() => {});
+    return run;
+  }
+
+  async _generate(messages, { onToken, conversationId, projectId, maxTokens, request, kind, meta } = {}) {
+    if (this.switching) throw Object.assign(new Error("Stopped: another model is loading"), { superseded: true });
     if (!this.engine || !this.modelId) throw new Error("No model loaded");
     this.lastUsed = Date.now();
     if (this.worker) this.worker.postMessage({ __gpuMemResetPeak: true }); // measure this reply's peak
@@ -252,10 +273,14 @@ export class LLM extends EventTarget {
         if (this.session) await this.session.addError("generate", err);
         // When the GPU drops the model (often out of memory on phones), WebLLM tears it
         // down and the running request fails with "...has already been disposed".
-        if (GPU_LOST.test(msg)) {
+        if (this.switching) {
+          // Torn down because another model (or context size) is loading: not a crash.
+          err.superseded = true;
+          if (this.state === "generating") this.setState("ready");
+        } else if (GPU_LOST.test(msg)) {
           err.gpuLost = true;
           timeline.logCrash("out-of-memory", `${this.model ? this.model.label : "Model"} while replying (${kind || "chat"}): ${msg}`, this);
-          this.emit("gpu-lost", { model: this.model, message: msg, during: kind || "chat" });
+          this.emit("gpu-lost", { model: this.model, message: msg, during: kind || "chat", contextWindow: this.contextWindow });
           this.destroyWorker();
           this.modelId = null;
           this.setState("error");
